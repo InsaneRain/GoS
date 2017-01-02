@@ -239,7 +239,7 @@ end
 
 class "DrawDmgHPBar"
 function DrawDmgHPBar:__init(Menu, unit, color, Text)
-	self.cfg, self.data, self.value, self.c = Menu, { }, { }, #Text
+	self.cfg, self.data, self.value, self.c = Menu, {}, {}, #Text
 	self.unit = unit
 	self.cfg:Boolean("rt", "Enable on this target?", true)
 	self.cfg:Info("rc", "    ------------------------------")
@@ -376,7 +376,7 @@ function DrawCircleColor(pos, radius, id, step, alphaColor, width, quality) -- D
 	quality = quality and 2 * math.pi / quality or 2 * math.pi / (radius / 5)
 	local points = {}
 	local size = 0
-	alphaColor  = alphaColor or 255
+	alphaColor = alphaColor or 255
 	local x, y, z = pos.x, pos.y, pos.z
 	if not saveColor[id] then saveColor[id] = {} end
 	for theta = 0, 2 * math.pi + quality, quality do
