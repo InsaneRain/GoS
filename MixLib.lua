@@ -1,6 +1,6 @@
---[[ Mix Lib Version 0.099 ]]--
+--[[ Mix Lib Version 0.1 ]]--
 
-local MixLibVersion = 0.099
+local MixLibVersion = 0.1
 local Reback = {_G.AttackUnit, _G.MoveToXYZ, _G.CastSkillShot, _G.CastSkillShot2, _G.CastSpell, _G.CastTargetSpell}
 local QWER, dta = {"_Q", "_W", "_E", "_R"}, {circular = function(unit, data) return GetCircularAOEPrediction(unit, data) end, linear = function(unit, data) return GetLinearAOEPrediction(unit, data) end, cone = function(unit, data) return GetConicAOEPrediction(unit, data) end}
 local OW, gw, Check, RIP = mc_cfg_orb.orb:Value(), {"Combo", "Harass", "LaneClear", "LastHit"}, Set {5, 8, 21, 22}, function() end
@@ -10,8 +10,17 @@ local hpbar = function(unit) return { x = unit.hpBarPos.x + fixpos(unit).x, y = 
 local hpP = function(unit) return (unit.health + unit.shieldAD)*103/(unit.maxHealth + unit.shieldAD) end
 local dmgP = function(dmg, unit) return dmg*103/(unit.maxHealth + unit.shieldAD) end
 local min, max, saveColor = math.min, math.max, {};
-local colors = {{255, 0, 0}, {255, 128, 0}, {255, 255, 0}, {128, 255, 0}, {0, 255, 0}, {0, 255, 128}, {0, 255, 255}, {0, 128, 255}, {0, 0, 255}, {128, 0, 255}, {255, 0, 255}, {255, 255, 255}}
-colors[0] = {0, 0, 0}
+local colors = {
+	{51, 0, 0}, {102, 0, 0}, {153, 0, 0}, {204, 0, 0}, {255, 0, 0},
+	{255, 51, 0}, {255, 102, 0}, {255, 153, 0}, {255, 204, 0}, {255, 255, 0},
+	{204, 255, 0}, {153, 255, 0}, {102, 255, 0}, {51, 255, 0}, {0, 255, 0},
+	{0, 255, 51}, {0, 255, 102}, {0, 255, 153}, {0, 255, 204}, {0, 255, 255},
+	{0, 204, 255}, {0, 153, 255}, {0, 102, 255}, {0, 51, 255}, {0, 0, 255},
+	{51, 0, 255}, {102, 0, 255}, {153, 0, 255}, {204, 0, 255}, {255, 0, 255},
+	{255, 51, 255}, {255, 102, 255}, {255, 153, 255}, {255, 204, 255}, {255, 255, 255},
+	{204, 204, 204}, {153, 153, 153}, {102, 102, 102}, {51, 51, 51}, {0, 0, 0}
+}
+
 local Mix_Print = function(text) PrintChat(string.format("<font color=\"#00B359\"><b>[Mix Lib]:</b></font><font color=\"#FFFFFF\"> %s</font>", tostring(text))) end
 
 do
@@ -322,6 +331,7 @@ function DCircle:Draw(Pos, bonusQuality)
 end
 
 function UpdateColor(color, step)
+	step = step or 10
 	local R, G, B = color[1], color[2], color[3]
 	if (R == 255 and B == 0) then
 		G = min(255, G + step);
@@ -367,14 +377,13 @@ function DrawCircleColor(pos, radius, id, step, alphaColor, width, quality) -- D
 	local points = {}
 	local size = 0
 	alphaColor  = alphaColor or 255
-	step = step or 10	
 	local x, y, z = pos.x, pos.y, pos.z
 	if not saveColor[id] then saveColor[id] = {} end
 	for theta = 0, 2 * math.pi + quality, quality do
 		local c = WorldToScreen(0, Vector(x + radius * math.cos(theta), y, z - radius * math.sin(theta)))
 		size = size + 1;
 		points[size] = Vector(c.x, c.y)
-		if not saveColor[id][size] then saveColor[id][size] = colors[size%13] end
+		if not saveColor[id][size] then saveColor[id][size] = colors[size%40 + 1] end
 	end
 	DrawLinesColor(points, width or 1, saveColor[id], alphaColor, size - 1, step)
 end
