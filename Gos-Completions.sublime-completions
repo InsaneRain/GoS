@@ -209,6 +209,7 @@
 		{"trigger": "GetHPBarPos\t(Obj)", "contents": "GetHPBarPos(${1:Obj})"},
 		{"trigger": "GetCurrentGold\t(Obj)", "contents": "GetCurrentGold(${1:Obj})"},
 		{"trigger": "GetTotalEarnedGold\t(Obj)", "contents": "GetTotalEarnedGold(${1:Obj})"},
+		{"trigger": "MenuConfig\t(\"saveID\", \"Name\")", "contents": "MenuConfig(\"${1:saveID}\", \"${2:Name}\")"},
 
 		"_Q",
 		"_W",
@@ -364,6 +365,15 @@
 		{"trigger": "Draw\t:(radius, color)", "contents": "Draw(${1:radius}, ${2:color})"},
 		{"trigger": "DrawDmg\t:(damage, color, currentHP)", "contents": "DrawDmg(${1:damage}, ${2:color}, ${3:currentHP})"},
 		{"trigger": "Skin\t:(number)", "contents": "Skin(${1:number})"},
-		{"trigger": "Model\t:(skinID, modelName)", "contents": "Model(${1:skinID}, \"${1:modelName}\")"}
+		{"trigger": "Model\t:(skinID, modelName)", "contents": "Model(${1:skinID}, \"${1:modelName}\")"},
+
+		{"trigger": "Menu\t:(\"id\", \"subMemuName\")", "contents": "Menu(\"${1:id}\", \"${2:subMemuName}\")"},
+		{"trigger": "Slider\t:(\"id\", \"name\", value, min, max, step, cb)", "contents": "Slider(\"${1:id}\", \"${2:name}\", ${3:currentVal}, ${4:minVal}, ${5:maxVal}, ${6:callback})"},
+		{"trigger": "DropDown\t:(\"id\", \"name\", index, dropTable, cb)", "contents": "DropDown(\"${1:id}\", \"${2:name}\", ${3:index}, ${4:dropTable}, ${5:calback})"},
+		{"trigger": "KeyBlinding\t:(\"id\", \"name\", key, isToggle, cb)", "contents": "KeyBlinding(\"${1:id}\", \"${2:name}\", ${3:key}, ${4:isToggle}, ${5:callback})"},
+		{"trigger": "Boolean\t:(\"id\", \"name\", boolean, cb)", "contents": "Boolean(\"${1:id}\", \"${2:name}\", ${3:true/false}, ${4:callback})"},
+		{"trigger": "ColorPick\t:(\"id\", \"name\", ARGB, cb)", "contents": "ColorPick(\"${1:id}\", \"${2:name}\", ${3:ARGB}, ${4:callback})"},
+		{"trigger": "Info\t:(\"id\", \"info\")", "contents": "Info(\"${1:id}\", \"${2:infoHere}\")"},
+		{"trigger": "Empty\t:(\"id\", value)", "contents": "Empty(\"${1:id}\", ${2:value})"}
 	]
 }
