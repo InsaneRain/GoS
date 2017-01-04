@@ -51,7 +51,7 @@
 		"OnGainVision(function(unit) ${1:$2(unit) }end)",
 		"OnLoseVision(function(unit) ${1:$2(unit) }end)",
 		"OnIssueOrder(function(order) ${1:$2(order) }end)",
-		"OnSpellCast(function(spell) ${1:$2(spell)} }end)",
+		"OnSpellCast(function(spell) ${1:$2(spell) }end)",
 		"OnDamage(function(unit, target, damage) ${1:$2(unit, target, damage) }end)",
 		"OnAggro(function(unit, flag) ${1:$2(unit, flag) }end)",
 		"OnProcessPacket(function(p) ${1:$2(p) }end)",
