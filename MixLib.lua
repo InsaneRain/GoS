@@ -1,6 +1,6 @@
---[[ Mix Lib Version 0.1 ]]--
+--[[ Mix Lib Version 0.11 ]]--
 
-local MixLibVersion = 0.1
+local MixLibVersion = 0.11
 local Reback = {_G.AttackUnit, _G.MoveToXYZ, _G.CastSkillShot, _G.CastSkillShot2, _G.CastSpell, _G.CastTargetSpell}
 local QWER, dta = {"_Q", "_W", "_E", "_R"}, {circular = function(unit, data) return GetCircularAOEPrediction(unit, data) end, linear = function(unit, data) return GetLinearAOEPrediction(unit, data) end, cone = function(unit, data) return GetConicAOEPrediction(unit, data) end}
 local OW, gw, Check, RIP = mc_cfg_orb.orb:Value(), {"Combo", "Harass", "LaneClear", "LastHit"}, Set {5, 8, 21, 22}, function() end
@@ -208,35 +208,6 @@ function MixLib:Move(Pos)
 	end
 end
 
-function MixLib:Predicting(Pred, unit, data, IPred)
-	if Pred == "OpenPredict" then
-		if data.collision then
-			local Pred = GetPrediction(unit, data)
-			local Hitchance, Pos = Pred.hitChance, Pred.castPos
-			if not Pred:mCollision(data.coll) then
-				return Hitchance, Pos, true, "OpenPredict" else return Hitchance, Pos, false, "OpenPredict"
-			end
-		else
-			local Pred = dta[data.type](unit, data)
-			return Pred.hitChance, Pred.castPos, true, "OpenPredict"
-		end
-	end
-	if Pred == "GPrediction" then
-		data.type = data.type == "linear" and "line" or data.type
-		local Pred = gPred:GetPrediction(unit, myHero, data, data.aoe, data.collision)
-		return Pred.HitChance, Pred.CastPosition, true, "GPrediction"
-	end
-	if Pred == "IPrediction" then
-		local Hitchance, Pos = IPred:Predict(unit)
-		return Hitchance, Pos, true, "IPrediction"
-	end
-	if Pred == "GoSPrediction" then
-		local Pred = GetPredictionForPlayer(myHero.pos, unit, unit.ms, data.speed, data.delay*1000, data.range, data.width, data.collision, data.aoe)
-		return Pred.HitChance, Pred.PredPos, true, "GoSPrediction"
-	end
-	return -5, nil, false, ""
-end
-
 class "DrawDmgHPBar"
 function DrawDmgHPBar:__init(Menu, unit, color, Text)
 	self.cfg, self.data, self.value, self.c = Menu, {}, {}, #Text
@@ -308,25 +279,23 @@ function DrawDmgHPBar:GetPos(i) -- members: x, y, fill[number], show[true/false]
 end
 
 class "DCircle"
-function DCircle:__init(Menu, text, range, color, width)
-	self.cfg, self.link, self.range, self.width = Menu, "DCircle_"..text, range, width or 1
-	self.color = {color["a"], color["r"], color["g"] ,color["b"]}
-	self.cfg:Menu(self.link, text)
-	self.cfg[self.link]:Boolean("r1",   "Enable Draw?", true)
-	self.cfg[self.link]:Slider("r2",    "Circle Quality (%)", 35, 1, 100, 1)
-	self.cfg[self.link]:ColorPick("r3", "Circle Color", self.color)
+function DCircle:__init(Menu, id, text, range, color, width)
+	self.range, self.width = range, width or 1
+	Menu:Menu(id, text)
+	self.cfg = Menu[id]
+	self.cfg:Boolean("r1",   "Enable Draw?", true)
+	self.cfg:Slider("r2",    "Circle Quality (%)", 35, 1, 100, 1)
+	self.cfg:ColorPick("r3", "Circle Color", {color["a"], color["r"], color["g"] ,color["b"]})
 end
 
 function DCircle:Update(what, value)
-	if what == "Range" then self.range = value end
-	if what == "Width" then self.width = value end
-	if what == "Color" then self.cfg[self.link].r3:Value(value) end
+	self[what] = value
 end
 
 function DCircle:Draw(Pos, bonusQuality)
-	if self.cfg[self.link].r1:Value() and Pos then
-		local bQuality, menuQuality = bonusQuality or 0, self.cfg[self.link].r2:Value()*0.01
-		DrawCircle3D(Pos.x, Pos.y, Pos.z, self.range, self.width, self.cfg[self.link].r3:Value(), self.range*(20+bQuality)/100*menuQuality)
+	if self.cfg.r1:Value() and Pos then
+		local bQuality, menuQuality = bonusQuality or 0, self.cfg.r2:Value()*0.01
+		DrawCircle3D(Pos.x, Pos.y, Pos.z, self.range, self.width, self.cfg.r3:Value(), self.range*(20+bQuality)/100*menuQuality)
 	end
 end
 
@@ -359,14 +328,16 @@ function UpdateColor(color, step)
 	if (G == 0 and B == 0) then
 		R = min(255, R + step)
 	end
-	return {R, G, B}
+	color[1] = R;
+	color[2] = G;
+	color[3] = B;
 end
 
 local function DrawLinesColor(t,w,c,a,size,step) --DrawLines2
 	for i = 1, size do
 		if t[i].x > 0 and t[i].y > 0 and t[i+1].x > 0 and t[i+1].y > 0 then
 			DrawLine(t[i].x, t[i].y, t[i+1].x, t[i+1].y, w, ARGB(a, c[i][1], c[i][2], c[i][3]))
-			c[i] = UpdateColor(c[i], step);
+			UpdateColor(c[i], step);
 		end
 	end
 end
