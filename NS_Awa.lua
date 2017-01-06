@@ -1,10 +1,12 @@
---[[ NS_Awa ver: 0.1
+--[[ NS_Awa ver: 0.11
 	Cooldown tracker
 	Recall tracker
 	Minimap Track
 --]]
 
-local NSAwa_Version = 0.1
+local NSAwa_Version = 0.11
+local floor, ceil = math.floor, math.ceil
+local enemies, allies = {}, {};
 local function NSAwa_Print(text) PrintChat(string.format("<font color=\"#D9006C\"><b>[NS Awaraness]:</b></font><font color=\"#FFFFFF\"> %s</font>", tostring(text))) end
 
 if not DirExists(SPRITE_PATH.."NS_Awa\\") then CreateDir(SPRITE_PATH.."NS_Awa\\") end
@@ -12,7 +14,7 @@ if not DirExists(SPRITE_PATH.."NS_Awa\\Spells\\") then CreateDir(SPRITE_PATH.."N
 if not DirExists(SPRITE_PATH.."NS_Awa\\Hud\\") then CreateDir(SPRITE_PATH.."NS_Awa\\Hud\\") end
 if not DirExists(SPRITE_PATH.."NS_Awa\\Champions\\") then CreateDir(SPRITE_PATH.."NS_Awa\\Champions\\") end
 
-local Nothing, c, link, patch, dname, ch = true, 0, { }, { }, { }, { }
+local Nothing, c, link, patch, dname, ch = true, 0, {}, {}, {}, {}
 local function addToDownload(fd, name)
 	c = c + 1
 	link[c] = "https://raw.githubusercontent.com/VTNEETS/GoS/master/NSAwa/"..fd.."/"..name
@@ -26,9 +28,14 @@ local function NSdownloadSprites()
 		NSAwa_Print(c.." file"..(c > 1 and "s" or "").." need to be download. Please wait...")
 		local ps = function(n) NSAwa_Print("("..n.."/"..c..") "..dname[n]..". Don't Press F6!") end
 		local download = function(n) DownloadFileAsync(link[n], patch[n], function() ps(n) sc(n+1) end) end
-		sc = function(n) if n > c then NSAwa_Print("All file need have been downloaded. Please 2x F6!") return end DelayAction(function() download(n) end, 1) end
-		DelayAction(function() download(1) end, 1)
+		sc = function(n) if n > c then NSAwa_Print("All file need have been downloaded. Please 2x F6!") return end DelayAction(function() download(n) end, 0.5) end
+		DelayAction(function() download(1) end, 0.5)
 	end
+end
+
+local function Toxyz(xVal, yVal, zVal)
+	if type(xVal) == "table" then return { x = xVal.x or 0, y = xVal.y or 0, z = xVal.z or 0 } end
+	return { x = xVal or 0, y = yVal or 0, z = zVal or 0 }
 end
 
 local hpbar1 = CreateSpriteFromFile("NS_Awa\\Hud\\HPBar.png", 1)
@@ -42,18 +49,18 @@ do
 	if dfcd == 0 then addToDownload("Spells", "cd.png") end
 end
 
-local recall, champ, sumDF = { }, { }, { }
-local last = { { }, { } }
+local recall, champ, sumDF = {}, {}, {}
+local last, spellName = {{}, {}}, {{}, {}}
 local menu, cMove, basePos = nil, false, nil
 
 if mapID == SUMMONERS_RIFT then
-	basePos = myHero.team == 100 and Vector(14300, 171, 14380) or Vector(410, 182, 420)
+	basePos = myHero.team == 100 and Toxyz(14300, 171, 14380) or Toxyz(410, 182, 420)
 elseif mapID == TWISTED_TREELINE then
-	basePos = myHero.team == 100 and Vector(14357, 151, 7295) or Vector(1065, 151, 7296)
+	basePos = myHero.team == 100 and Toxyz(14357, 151, 7295) or Toxyz(1065, 151, 7296)
 elseif mapID == HOWLING_ABYSS then
-	basePos = myHero.team == 100 and Vector(953, -131, 1059) or Vector(11800, -132, 11561)
+	basePos = myHero.team == 100 and Toxyz(953, -131, 1059) or Toxyz(11800, -132, 11561)
 elseif mapID == CRYSTAL_SCAR then
-	basePos = myHero.team == 100 and Vector(14300, 171, 14380) or Vector(410, 182, 420)
+	basePos = myHero.team == 100 and Toxyz(14300, 171, 14380) or Toxyz(410, 182, 420)
 end	
 
 local fixbar = {
@@ -67,7 +74,8 @@ local rcf = {
 }
 
 local function CoolDownTracker()
-	for i, enemy in pairs(GetEnemyHeroes()) do
+	for i = 1, #enemies, 1 do
+		local enemy = enemies[1];
 		if not enemy.dead and enemy.visible and menu.cd.e[enemy.charName]:Value() then
 			local bar = GetHPBarPos(enemy)
 			if bar.x > 0 and bar.y > 0 then
@@ -77,13 +85,13 @@ local function CoolDownTracker()
 				local posY2 = bar.y + (fixbar[enemy.charName] and fixbar[enemy.charName].y2 or fixbar.Other.y2)
 				DrawSprite(hpbar1, posX1, posY1, 0, 1, 107, 10, GoS.White)
 				DrawSprite(hpbar2, posX2, posY2, 0, 0, 37, 26, GoS.White)
-				DrawSprite(sumDF[enemy:GetSpellData(4).name:lower()], posX2 + 2, posY2 + 2, 0, 0, 14, 14, GoS.White)
-				DrawSprite(sumDF[enemy:GetSpellData(5).name:lower()], posX2 + 20, posY2 + 2, 0, 0, 14, 14, GoS.White)
-				for slot = 0, 3 do
+				DrawSprite(sumDF[spellName[1][i][1]], posX2 + 2, posY2 + 2, 0, 0, 14, 14, GoS.White)
+				DrawSprite(sumDF[spellName[1][i][2]], posX2 + 20, posY2 + 2, 0, 0, 14, 14, GoS.White)
+				for slot = 0, 3, 1 do
 					if GetGameTimer() < GetSpellData(enemy, slot).cdEndTime then
 						local fullCD = GetSpellData(enemy, slot).spellCd
 						local time = GetSpellData(enemy, slot).cdEndTime - GetGameTimer()
-						DrawText(string.format("%2d", math.ceil(time)), 15, posX1+ 2 + 28*slot, posY1 + 7, GoS.White)
+						DrawText(string.format("%2d", ceil(time)), 15, posX1+ 2 + 28*slot, posY1 + 7, GoS.White)
 						FillRect(posX1+ 5 + 26*slot, posY1+2, (fullCD - time) * 21 / fullCD, 4, ARGB(255, 38, 159, 222))
 					else
 						if enemy:GetSpellData(slot).level > 0 then
@@ -91,12 +99,12 @@ local function CoolDownTracker()
 						end
 					end
 				end
-				for slot = 4, 5 do
+				for slot = 4, 5, 1 do
 					if GetGameTimer() < GetSpellData(enemy, slot).cdEndTime then
 						local fullCD = GetSpellData(enemy, slot).spellCd
 						local time = GetSpellData(enemy, slot).cdEndTime - GetGameTimer()
 						DrawSprite(dfcd, posX2 + 2 + 18*(slot-4), posY2 + 2, 0, 0, 14, 14, GoS.White)
-						DrawText(string.format("%2d", math.ceil(time)), 13, posX2 - 3 + 24*(slot-4), posY2 + 24, GoS.White)
+						DrawText(string.format("%2d", ceil(time)), 13, posX2 - 3 + 24*(slot-4), posY2 + 24, GoS.White)
 						FillRect(posX2 + 3 + 18*(slot-4), posY2 + 19, (fullCD - time) * 13 / fullCD, 4, ARGB(255, 38, 159, 222))
 					else
 						if enemy:GetSpellData(slot).level > 0 then
@@ -108,7 +116,8 @@ local function CoolDownTracker()
 		end
 	end
 
-	for i, ally in pairs(GetAllyHeroes()) do
+	for i = 1, #allies, 1 do
+		local ally = allies[i];
 		if not ally.dead and menu.cd.a[ally.charName]:Value() then
 			local bar = GetHPBarPos(ally)
 			if bar.x > 0 and bar.y > 0 then
@@ -118,13 +127,13 @@ local function CoolDownTracker()
 				local posY2 = bar.y + (fixbar[ally.charName] and fixbar[ally.charName].y2 or fixbar.Other.y2)
 				DrawSprite(hpbar1, posX1, posY1, 0, 1, 107, 10, GoS.White)
 				DrawSprite(hpbar2, posX2, posY2, 0, 0, 37, 26, GoS.White)
-				DrawSprite(sumDF[ally:GetSpellData(4).name:lower()], posX2 + 2, posY2 + 2, 0, 0, 14, 14, GoS.White)
-				DrawSprite(sumDF[ally:GetSpellData(5).name:lower()], posX2 + 20, posY2 + 2, 0, 0, 14, 14, GoS.White)
-				for slot = 0, 3 do
+				DrawSprite(sumDF[spellName[2][i][1]], posX2 + 2, posY2 + 2, 0, 0, 14, 14, GoS.White)
+				DrawSprite(sumDF[spellName[2][i][2]], posX2 + 20, posY2 + 2, 0, 0, 14, 14, GoS.White)
+				for slot = 0, 3, 1 do
 					if GetGameTimer() < GetSpellData(ally, slot).cdEndTime then
 						local fullCD = GetSpellData(ally, slot).spellCd
 						local time = GetSpellData(ally, slot).cdEndTime - GetGameTimer()
-						DrawText(string.format("%2d", math.ceil(time)), 15, posX1+ 2 + 28*slot, posY1 + 7, GoS.White)
+						DrawText(string.format("%2d", ceil(time)), 15, posX1+ 2 + 28*slot, posY1 + 7, GoS.White)
 						FillRect(posX1+ 5 + 26*slot, posY1+2, (fullCD - time) * 21 / fullCD, 4, ARGB(255, 38, 159, 222))
 					else
 						if ally:GetSpellData(slot).level > 0 then
@@ -132,12 +141,12 @@ local function CoolDownTracker()
 						end
 					end
 				end
-				for slot = 4, 5 do
+				for slot = 4, 5, 1 do
 					if GetGameTimer() < GetSpellData(ally, slot).cdEndTime then
 						local fullCD = GetSpellData(ally, slot).spellCd
 						local time = GetSpellData(ally, slot).cdEndTime - GetGameTimer()
 						DrawSprite(dfcd, posX2 + 2 + 18*(slot-4), posY2 + 2, 0, 0, 14, 14, GoS.White)
-						DrawText(string.format("%2d", math.ceil(time)), 13, posX2 - 3 + 24*(slot-4), posY2 + 24, GoS.White)
+						DrawText(string.format("%2d", ceil(time)), 13, posX2 - 3 + 24*(slot-4), posY2 + 24, GoS.White)
 						FillRect(posX2 + 3 + 18*(slot-4), posY2 + 19, (fullCD - time) * 13 / fullCD, 4, ARGB(255, 38, 159, 222))
 					else
 						if ally:GetSpellData(slot).level > 0 then
@@ -156,14 +165,14 @@ local function RecallTracker()
 		menu.rc.py.value = GetCursorPos().y
 	end
 	if #recall > 0 or menu.rc.cm:Value() then DrawSprite(rcbar, menu.rc.px:Value(), menu.rc.py:Value(), 0, 0, 330, 13, GoS.White) end
-	for i = 1, #recall do
+	for i = 1, #recall, 1 do
 		recall[i].cTime = (recall[i].fT - GetGameTimer() + recall[i].sT)
 		local rec = recall[i]
 		if rec.stopT then
 			recall[i].cTime = (recall[i].fT - recall[i].stopT + recall[i].sT)
 			if GetGameTimer() > rec.stopT + 0.5 then
 				table.remove(recall, i)
-				break
+				return
 			end
 		end
 		FillRect(menu.rc.px:Value() + 3, menu.rc.py:Value() + 1, rec.cTime * 324 / rec.fT, 11, rec.color(i))
@@ -173,7 +182,8 @@ local function RecallTracker()
 end
 
 local function MinimapTrack()
-	for i, enemy in pairs(GetEnemyHeroes()) do
+	for i = 1, #enemies, 1 do
+		local enemy = enemies[i];
 		if menu.mm[enemy.charName]:Value() and not enemy.visible and not enemy.dead then
 			local pos = WorldToMinimap(last[2][enemy.networkID])
 			DrawSprite(champ[i], pos.x - 10.8, pos.y - 10.8, 0, 0, 21.6, 21.6, GoS.White)
@@ -181,9 +191,9 @@ local function MinimapTrack()
 			local mp = enemy.ms*time
 			if mp < 4300 then DrawCircleMinimap(last[2][enemy.networkID], mp, 1, 255, 0x9000F5FF) end
 			if time < 60 then
-				DrawText(string.format("%2d", math.floor(time)), 12, pos.x - 7.5, pos.y + 5, GoS.White)
+				DrawText(string.format("%2d", floor(time)), 12, pos.x - 7.5, pos.y + 5, GoS.White)
 			else
-				local uiTime = math.floor(time)
+				local uiTime = floor(time)
 				DrawText(string.format("%2d:%02d", uiTime/60, uiTime%60), 12, pos.x - 14, pos.y + 5, GoS.White)
 			end
 		end
@@ -197,13 +207,14 @@ local function Load()
 		if dfcd > 0 then ReleaseSprite(dfcd) end
 		if rcbar > 0 then ReleaseSprite(rcbar) end
 
-		for i, enemy in pairs(GetEnemyHeroes()) do
-			local NAME = enemy:GetSpellData(4).name:lower()
+		for i = 1, #enemies, 1 do
+			local enemy = enemies[i];
+			local NAME = spellName[1][i][1];
 			if sumDF[NAME] > 0 then
 				ReleaseSprite(sumDF[NAME])
 				sumDF[NAME] = 0
 			end
-			NAME = enemy:GetSpellData(5).name:lower()
+			NAME = spellName[1][i][2];
 			if sumDF[NAME] > 0 then
 				ReleaseSprite(sumDF[NAME])
 				sumDF[NAME] = 0
@@ -212,13 +223,14 @@ local function Load()
 			if champ[i] > 0 then ReleaseSprite(champ[i]) end
 		end
 
-		for i, ally in pairs(GetAllyHeroes()) do
-			local NAME = ally:GetSpellData(4).name:lower()
+		for i = 1, #allies, 1 do
+			local ally = allies[i];
+			local NAME = spellName[2][i][1];
 			if sumDF[NAME] > 0 then
 				ReleaseSprite(sumDF[NAME])
 				sumDF[NAME] = 0
 			end
-			NAME = ally:GetSpellData(5).name:lower()
+			NAME = spellName[2][i][2];
 			if sumDF[NAME] > 0 then
 				ReleaseSprite(sumDF[NAME])
 				sumDF[NAME] = 0
@@ -240,7 +252,7 @@ local function Load()
 			recall[#recall + 1] = { unit = unit, sT = GetGameTimer(), fT = rec.totalTime*0.001, color = function(i) if rec.totalTime <= 4 then return ARGB(280 - 45*i, 181, 19, 210) end return ARGB(280 - 45*i, 255, 255, 255) end }
 		else
 			if rec.isFinish or (rec.totalTime <= 4 and rec.passedTime >= 3940 or rec.passedTime >= 7940) then last[2][unit.networkID] = basePos end
-			for i = 1, #recall do
+			for i = 1, #recall, 1 do
 				if recall[i].unit.networkID == unit.networkID then
 					if rec.isFinish or (rec.totalTime <= 4 and rec.passedTime >= 3940 or rec.passedTime >= 7940) then
 						table.remove(recall, i)
@@ -248,7 +260,7 @@ local function Load()
 						recall[i].stopT = GetGameTimer()
 						recall[i].color = function(i) if rec.totalTime <= 4 then return ARGB(280 - 45*i, 159, 11, 196) end return ARGB(280 - 45*i, 208, 198, 198) end
 					end
-					break
+					return
 				end
 			end
 		end
@@ -257,7 +269,7 @@ local function Load()
 	OnLoseVision(function(unit)
 		if unit.type == "AIHeroClient" and unit.team ~= myHero.team then
 			last[1][unit.networkID] = GetGameTimer()
-			last[2][unit.networkID] = not unit.dead and Vector(unit.pos) or basePos
+			last[2][unit.networkID] = not unit.dead and Toxyz(unit.pos) or basePos
 		end
 	end)
 
@@ -283,11 +295,18 @@ function NS_Awaraness:__init(Menu)
 		menu.rc:Slider("py", "Vertical", GetResolution().y/1.5, 1, GetResolution().y, 0.001)
 	menu:Menu("mm", "Track Minimap")
 	OnLoad(function()
-		for i, enemy in pairs(GetEnemyHeroes()) do
+		enemies = GetEnemyHeroes();
+		allies = GetAllyHeroes();
+		for i = 1, #enemies, 1 do
+			local enemy = enemies[i];
 			menu.cd.e:Boolean(enemy.charName, "Track "..enemy.charName, true)
 			menu.mm:Boolean(enemy.charName, "Track "..enemy.charName, true)
+			spellName[1][i] = {nil, nil}
+			for j = 1, 2, 1 do
+				spellName[1][i][j] = enemy:GetSpellData(j+3).name:lower();
+			end
 
-			local NAME = enemy:GetSpellData(4).name:lower()
+			local NAME = spellName[1][i][1]
 			if not FileExist(SPRITE_PATH.."NS_Awa\\Spells\\"..NAME..".png") then
 				if not ch[NAME] then
 					addToDownload("Spells", NAME..".png")
@@ -299,7 +318,7 @@ function NS_Awaraness:__init(Menu)
 				end
 			end
 
-			NAME = enemy:GetSpellData(5).name:lower()
+			NAME = spellName[1][i][2]
 			if not FileExist(SPRITE_PATH.."NS_Awa\\Spells\\"..NAME..".png") then
 				if not ch[NAME] then
 					addToDownload("Spells", NAME..".png")
@@ -314,13 +333,18 @@ function NS_Awaraness:__init(Menu)
 			champ[i] = CreateSpriteFromFile("NS_Awa\\Champions\\"..enemy.charName..".png", 0.4)
 			if champ[i] == 0 then addToDownload("Champions", enemy.charName..".png") end
 			last[1][enemy.networkID] = GetGameTimer()
-			last[2][enemy.networkID] = Vector(enemy.pos)
+			last[2][enemy.networkID] = Toxyz(enemy.pos)
 		end
 
-		for i, ally in pairs(GetAllyHeroes()) do
+		for i = 1, #allies, 1 do
+			local ally = allies[i];
 			menu.cd.a:Boolean(ally.charName, "Track "..ally.charName, true)
+			spellName[2][i] = {};
+			for j = 1, 2, 1 do
+				spellName[2][i][j] = ally:GetSpellData(j+3).name:lower();
+			end
 
-			local NAME = ally:GetSpellData(4).name:lower()
+			local NAME = spellName[2][i][1]
 			if not FileExist(SPRITE_PATH.."NS_Awa\\Spells\\"..NAME..".png") then
 				if not ch[NAME] then
 					addToDownload("Spells", NAME..".png")
@@ -332,7 +356,7 @@ function NS_Awaraness:__init(Menu)
 				end
 			end
 
-			NAME = ally:GetSpellData(5).name:lower()
+			NAME = spellName[2][i][2]
 			if not FileExist(SPRITE_PATH.."NS_Awa\\Spells\\"..NAME..".png") then
 				if not ch[NAME] then
 					addToDownload("Spells", NAME..".png")
@@ -369,17 +393,13 @@ function NS_Awaraness:__init(Menu)
 		NSdownloadSprites()
 		if not Nothing then return end
 		Load()
+		GetWebResultAsync("https://raw.githubusercontent.com/VTNEETS/GoS/master/NS_Awa.version", function(OnlineVer)
+			if tonumber(OnlineVer) > NSAwa_Version then
+				NSAwa_Print("New Version found (v"..OnlineVer.."). Please wait...")
+				DownloadFileAsync("https://raw.githubusercontent.com/VTNEETS/GoS/master/NS_Awa.lua", COMMON_PATH.."NS_Awa.lua", function() NSAwa_Print("Updated to version "..OnlineVer..". Please F6 x2 to reload.") end)
+			else
+				NSAwa_Print("Loaded Version: "..NSAwa_Version)
+			end
+		end)
 	end)
 end
-
-OnLoad(function()
-	if not Nothing then return end
-	GetWebResultAsync("https://raw.githubusercontent.com/VTNEETS/GoS/master/NS_Awa.version", function(OnlineVer)
-		if tonumber(OnlineVer) > NSAwa_Version then
-			NSAwa_Print("New Version found (v"..OnlineVer.."). Please wait...")
-			DownloadFileAsync("https://raw.githubusercontent.com/VTNEETS/GoS/master/NS_Awa.lua", COMMON_PATH.."NS_Awa.lua", function() NSAwa_Print("Updated to version "..OnlineVer..". Please F6 x2 to reload.") end)
-		else
-			NSAwa_Print("Loaded Version: "..NSAwa_Version)
-		end
-	end)
-end)
