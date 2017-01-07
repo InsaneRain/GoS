@@ -210,6 +210,9 @@
 		{"trigger": "GetCurrentGold\t(Obj)", "contents": "GetCurrentGold(${1:Obj})"},
 		{"trigger": "GetTotalEarnedGold\t(Obj)", "contents": "GetTotalEarnedGold(${1:Obj})"},
 		{"trigger": "MenuConfig\t(\"saveID\", \"Name\")", "contents": "MenuConfig(\"${1:saveID}\", \"${2:Name}\")"},
+		{"trigger": "FileExist\t(\"FilePath\")", "contents": "FileExist(${1:COMMON_PATH}..\"${2:File'path}.lua\")"},
+		{"trigger": "DownloadFileAsync\t(\"link\", savePath, callback)", "contents": "DownloadFileAsync(\"${1:link}\", ${2:SCRIPT_PATH}..\"${3:File'name}.lua\", function() $4 end)"},
+		{"trigger": "GetWebResultAsync\t(\"link\", callback(\"string\"))", "contents": "GetWebResultAsync(\"${1:link}\", function(str) \n\t$2\nend)"},
 
 		"_Q",
 		"_W",
@@ -233,15 +236,15 @@
 		"READYNONCAST",
 		"UNKNOWN",
 		"ONCOOLDOWN",
-		
-		"Obj_AI_SpawnPoint",
-		"Obj_AI_Camp",
-		"Obj_AI_Barracks",
-		"Obj_AI_Hero",
-		"Obj_AI_Minion",
-		"Obj_AI_Turret",
-		"Obj_AI_LineMissle",
-		"Obj_AI_Shop",
+
+		{"trigger": "Obj_AI_SpawnPoint\t\"obj_SpawnPoint\"", "contents": "Obj_AI_SpawnPoint"},
+		{"trigger": "Obj_AI_Camp\t\"NeutralMinionCamp\"", "contents": "Obj_AI_Camp"},
+		{"trigger": "Obj_AI_Barracks\t\"obj_BarracksDampener\"", "contents": "Obj_AI_Barracks"},
+		{"trigger": "Obj_AI_Hero\t\"AIHeroClient\"", "contents": "Obj_AI_Hero"},
+		{"trigger": "Obj_AI_Minion\t\"obj_AI_Minion\"", "contents": "Obj_AI_Minion"},
+		{"trigger": "Obj_AI_Turret\t\"obj_AI_Turret\"", "contents": "Obj_AI_Turret"},
+		{"trigger": "Obj_AI_LineMissle\t\"MissileClient\"", "contents": "Obj_AI_LineMissle"},
+		{"trigger": "Obj_AI_Shop\t\"obj_Shop\"", "contents": "Obj_AI_Shop"},
 
 		"CRYSTAL_SCAR",
 		"TWISTED_TREELINE",
@@ -374,6 +377,10 @@
 		{"trigger": "Boolean\t:(\"id\", \"name\", boolean, cb)", "contents": "Boolean(\"${1:id}\", \"${2:name}\", ${3:true/false}, ${4:callback})"},
 		{"trigger": "ColorPick\t:(\"id\", \"name\", ARGB, cb)", "contents": "ColorPick(\"${1:id}\", \"${2:name}\", ${3:ARGB}, ${4:callback})"},
 		{"trigger": "Info\t:(\"id\", \"info\")", "contents": "Info(\"${1:id}\", \"${2:infoHere}\")"},
-		{"trigger": "Empty\t:(\"id\", value)", "contents": "Empty(\"${1:id}\", ${2:value})"}
+		{"trigger": "Empty\t:(\"id\", value)", "contents": "Empty(\"${1:id}\", ${2:value})"},
+
+		{"trigger": "Load_Analytics\tLogge's Analytics", "contents": "if FileExist(COMMON_PATH..\"Analytics.lua\") then\n\trequire(\"Analytics\")\n\tAnalytics(\"${1:ScriptName}\", \"${2:Author}\", ${3:printLoaded--[[true/false]]})\nelse\n\tDownloadFileAsync(\"https://raw.githubusercontent.com/LoggeL/GoS/master/Analytics.lua\", COMMON_PATH..\"Analytics.lua\", function()\n\t\trequire(\"Analytics\")\n\t\tAnalytics(\"${1:ScriptName}\", \"${2:Author}\", ${3:printLoaded--[[true/false]]})\n\tend)\nend\n"},
+		{"trigger": "Load_ChallengerCommon\tDeftsu's ChallengerCommon", "contents": "if FileExist(COMMON_PATH..\"ChallengerCommon.lua\") then\n\trequire(\"ChallengerCommon\")\nelse\n\tPrintChat(string.format(\"<font color='#FFFFFF'>Please wait while downloading <b>ChallengerCommon.lua</b></font>\"))\n\tDownloadFileAsync(\"https://raw.githubusercontent.com/D3ftsu/GoS/master/Common/ChallengerCommon.lua\", COMMON_PATH..\"ChallengerCommon.lua\", function() PrintChat(string.format(\"<font color='#FFFFFF'>Downloaded <b>ChallengerCommon.lua</b>, please 2x F6!</font>\")) end) return\nend\n"},
+		{"trigger": "Load_MixLib\tRyzuki's MixLib", "contents": "if FileExist(COMMON_PATH..\"MixLib.lua\") then\n\trequire(\"MixLib\")\nelse\n\tPrintChat(string.format(\"<font color='#FFFFFF'>Please wait while downloading <b>MixLib.lua</b></font>\"))\n\tDownloadFileAsync(\"https://raw.githubusercontent.com/VTNEETS/GoS/master/MixLib.lua\", COMMON_PATH..\"MixLib.lua\", function() PrintChat(string.format(\"<font color='#FFFFFF'>Downloaded <b>MixLib.lua</b>, please 2x F6!</font>\")) end) return\nend\n"}
 	]
 }
