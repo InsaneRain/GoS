@@ -1,4 +1,4 @@
---[[ NEET Series Version 0.25
+--[[ NEET Series Version 0.26
 	_____   ___________________________   ________           _____             
 	___  | / /__  ____/__  ____/__  __/   __  ___/______________(_)____________
 	__   |/ /__  __/  __  __/  __  /      _____ \_  _ \_  ___/_  /_  _ \_  ___/
@@ -6,7 +6,7 @@
 	/_/ |_/  /_____/  /_____/  /_/        /____/ \___//_/    /_/  \___//____/  
 
 ---------------------------------------]]
-local NEETSeries_Version = 0.25
+local NEETSeries_Version = 0.26
 local function NEETSeries_Print(text) PrintChat(string.format("<font color=\"#4169E1\"><b>[NEET Series]:</b></font><font color=\"#FFFFFF\"> %s</font>", tostring(text))) end
 
 if not FileExist(COMMON_PATH.."MixLib.lua") then
@@ -58,7 +58,7 @@ function __MinionManager:__init(range1, range2)
 end
 
 function __MinionManager:CreateObj(obj)
-	if GetObjectType(obj) ~= "obj_AI_Minion" or GetTeam(obj) == MINION_ALLY then return end
+	if GetObjectType(obj) ~= "obj_AI_Minion" or GetObjectBaseName(obj):find("Plant") or GetTeam(obj) == MINION_ALLY then return end
 	if GetObjectBaseName(obj):find("Minion_") and GetTeam(obj) ~= 300 then
 		self.minion[#self.minion + 1] = obj
 		return
@@ -70,7 +70,7 @@ function __MinionManager:CreateObj(obj)
 end
 
 function __MinionManager:DeleteObj(obj)
-	if GetObjectType(obj) ~= "obj_AI_Minion" or GetTeam(obj) == MINION_ALLY then return end
+	if GetObjectType(obj) ~= "obj_AI_Minion" or GetObjectBaseName(obj):find("Plant") or GetTeam(obj) == MINION_ALLY then return end
 	if GetObjectBaseName(obj):find("Minion_") and GetTeam(obj) ~= 300 then
 		for i = 1, #self.minion do
 			if self.minion[i] == obj then
@@ -113,6 +113,7 @@ local pred = {"OpenPredict", "GPrediction", "GoSPrediction"}
 function LoadPredMenu(menu)
 	menu:DropDown("cpred", "Choose Prediction:", 1, pred, function(val) NEETSeries_Print("2x F6 to ally using "..pred[val]) end)
 	menu:Info("currentPred", "Current Prediction: "..pred[menu.cpred:Value()])
+	if menu.cpred:Value() == 2 then require("GPrediction") end
 end
 
 local OPM = {
@@ -128,11 +129,12 @@ local checkHC = {
 class "AddSpell"
 function AddSpell:__init(spellData, menu, v)
 	menu:DropDown("chc", "Choose Hit-chance", 3, {"Low", "Normal", "High", "Very High"}, function(v) self.hc = checkHC[self.method][v] end)
-	self.data = spellData
-	if self.data.type == "line" and v == 1 then self.data.type = "linear" end
-	if self.data.type == "linear" and v == 2 then self.data.type = "line" end
-	self.data.radius = self.data.width * 0.5
+	if v == 1 then spellData.type = "linear" end
+	if v == 2 then spellData.type = "line" end
+	spellData.radius = spellData.width * 0.5
+	spellData.col = {"minion","champion"}
 	self.method = v
+	self.data = spellData
 	self.hc = checkHC[self.method][menu.chc:Value()]
 end
 
@@ -146,9 +148,9 @@ end
 
 function AddSpell:Cast(target, CSS2)
 	if self.method == 1 then
-		if self.data.col > 0 then
+		if self.data.colNum > 0 then
 			local Pred = GetPrediction(target, self.data)
-			if not Pred:mCollision(self.data.col) and Pred.hitChance >= self.hc then
+			if not Pred:mCollision(self.data.colNum) and Pred.hitChance >= self.hc then
 				CastTo(Pred.castPos, self.data.slot, CSS2)
 			end
 		else
@@ -160,14 +162,14 @@ function AddSpell:Cast(target, CSS2)
 		return
 	end
 	if self.method == 2 then
-		local Pred = gPred:GetPrediction(target, myHero, self.data, self.data.col == 0, self.data.col > 0)
+		local Pred = gPred:GetPrediction(target, myHero, self.data, self.data.colNum == 0, self.data.colNum > 0)
 		if Pred.HitChance >= self.hc then
 			CastTo(Pred.CastPosition, self.data.slot, CSS2)
 		end
 		return
 	end
 	if self.method == 3 then
-		local Pred = GetPredictionForPlayer(myHero, target, target.ms, self.data.speed, self.data.delay, self.data.range, self.data.width, self.data.col > 0, true)
+		local Pred = GetPredictionForPlayer(myHero, target, target.ms, self.data.speed, self.data.delay, self.data.range, self.data.width, self.data.colNum > 0, true)
 		if Pred.HitChance >= self.hc then
 			CastTo(Pred.PredPos, self.data.slot, CSS2)
 		end
@@ -255,7 +257,7 @@ end
 		{ Version 0.246 }
 			- Delete Annie W Laneclear (fps drop)
 
-		{ Version 0.25 }
+		{ Version 0.25 + 0.26 }
 			- Improve Fps
 
 -------------------------------------------]]
