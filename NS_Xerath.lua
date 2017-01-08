@@ -126,7 +126,7 @@ local function CanCast(t, target)
 	if (t == "W" and WObj and GetDistanceSqr(myHero, WObj.pos) >= GetDistanceSqr(myHero, target.pos)) then
 		return false
 	end
-	if (t == "E" and WObj and GetDistanceSqr(myHero, EObj.pos) >= GetDistanceSqr(myHero, target.pos)) then
+	if (t == "E" and EObj and GetDistanceSqr(myHero, EObj.pos) >= GetDistanceSqr(myHero, target.pos)) then
 		return false
 	end
 	return true
