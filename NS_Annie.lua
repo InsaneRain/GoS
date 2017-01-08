@@ -15,7 +15,7 @@ local Ignite = Mix:GetSlotByName("summonerdot", 4, 5)
 local function CalcDmg(type, target, dmg) if type == 1 then return CalcPhysicalDamage(myHero, target, dmg) end return CalcMagicalDamage(myHero, target, dmg) end
 local function IsSReady(spell) return CanUseSpell(myHero, spell) == 0 or CanUseSpell(myHero, spell) == 8 end
 local function ManaCheck(value) return value <= GetPercentMP(myHero) end
-local function EnemiesAround(pos, range) return CountObjectsNearPos(pos, nil, range, Enemies, MINION_ENEMY) end
+local function EnemiesAround(pos, range) return CountObjectsNearPos(pos, nil, range, Enemies.List, MINION_ENEMY) end
 
 local function AddMenu(Menu, ID, Text, Tbl, MP)
 	local StrID, StrN = {"cb", "hr", "lc", "jc", "ks", "lh"}, {"Combo", "Harass", "LaneClear", "JungleClear", "KillSteal", "LastHit"}
@@ -87,9 +87,10 @@ OnProcessSpellComplete(function(u, a)
 end)
 
 --------------------------------------------------------------------------------
+
 local Q = { range = myHero:GetSpellData(_Q).range, speed = 1500, delay = 250 }
-local W = { range = myHero:GetSpellData(_W).range, speed = huge, delay = 0.25, width = 80, type = "cone", slot = 1, col = 0, angle = 50 }
-local R = { range = myHero:GetSpellData(_R).range, speed = huge, delay = 0.25, width = 250, type = "circular", slot = 3, col = 0 }
+local W = { range = myHero:GetSpellData(_W).range, speed = huge, delay = 0.25, width = 80, type = "cone", slot = 1, colNum = 0, angle = 50 }
+local R = { range = myHero:GetSpellData(_R).range, speed = huge, delay = 0.25, width = 500, type = "circular", slot = 3, colNum = 0 }
 local D = { Flash = MixLib:GetSlotByName("summonerflash", 4, 5), passive = GotBuff(myHero, "pyromania"), stun = GotBuff(myHero, "pyromania_particle") > 0, Teddy = GotBuff(myHero, "infernalguardiantimer") > 0 }
 local Cr = __MinionManager(Q.range, Q.range)
 local Damage = {
@@ -98,20 +99,16 @@ local Damage = {
 	[3] = function(unit) return CalcDmg(2, unit, 25 + 130*myHero:GetSpellData(_R).level + 0.7*myHero.ap) end
 }
 local Target = {
-	[0] = nil,
-	[1] = nil,
-	[3] = nil
+	[0] = ChallengerTargetSelector(Q.range, 2, false, nil, false, NS_Annie.Q),
+	[1] = ChallengerTargetSelector(W.range, 2, false, nil, false, NS_Annie.W),
+	[3] = ChallengerTargetSelector(R.range, 2, true, nil, false, NS_Annie.ult)
 }
 local Draw = {
-	[0] = nil,
-	[1] = nil,
-	[3] = nil
+	[0] = DCircle(NS_Annie.dw, "Q", "Draw Q Range", Q.range, ARGB(150, 0, 245, 255)),
+	[1] = DCircle(NS_Annie.dw, "W", "Draw W Range", W.range, ARGB(150, 186, 85, 211)),
+	[3] = DCircle(NS_Annie.dw, "R", "Draw R Range", R.range, ARGB(150, 89, 0 ,179))
 }
-local Spell = {
-	[1] = nil,
-	[3] = nil
-}
-local Ready = {
+local Castable = {
 	[0] = false,
 	[1] = false,
 	[2] = false,
@@ -167,22 +164,17 @@ local NS_Annie = MenuConfig("NS_Annie", "[NEET Series] - Annie")
 	PermaShow(NS_Annie.ult.u3)
 	PermaShow(NS_Annie.misc.E.eb1)
 -----------------------------------
-Target[0] = ChallengerTargetSelector(Q.range, 2, false, nil, false, NS_Annie.Q)
-Target[1] = ChallengerTargetSelector(W.range, 2, false, nil, false, NS_Annie.W)
-Target[3] = ChallengerTargetSelector(R.range, 2, false, nil, false, NS_Annie.ult)
+
+local Spell = {
+	[1] = AddSpell(W, NS_Annie.W, NS_Annie.cpred:Value()),
+	[3] = AddSpell(R, NS_Annie.ult, NS_Annie.cpred:Value())
+}
+
 Target[0].Menu.TargetSelector.TargetingMode.callback = function(id) Target[0].Mode = id end
 Target[1].Menu.TargetSelector.TargetingMode.callback = function(id) Target[1].Mode = id end
 Target[3].Menu.TargetSelector.TargetingMode.callback = function(id) Target[3].Mode = id end
-
-Draw[0] = DCircle(NS_Annie.dw, "Q", "Draw Q Range", Q.range, ARGB(150, 0, 245, 255))
-Draw[1] = DCircle(NS_Annie.dw, "W", "Draw W Range", W.range, ARGB(150, 186, 85, 211))
-Draw[3] = DCircle(NS_Annie.dw, "R", "Draw R Range", R.range, ARGB(150, 89, 0 ,179))
-
-Spell[1] = AddSpell(W, NS_Annie.W, NS_Annie.cpred:Value())
-Spell[3] = AddSpell(R, NS_Annie.ult, NS_Annie.cpred:Value())
-
-ChallengerAntiGapcloser(NS_Annie.misc, function(o, s) if not D.stun then return end if ValidTarget(o, W.range) and Ready[1] then Spell[1]:Cast(o) elseif ValidTarget(o, Q.range) and Ready[0] then CastTargetSpell(o, _Q) end end)
-ChallengerInterrupter(NS_Annie.misc, function(o, s) if not D.stun then return end if ValidTarget(o, W.range) and Ready[1] then Spell[1]:Cast(o) elseif ValidTarget(o, Q.range) and Ready[0] then CastTargetSpell(o, _Q) end end)
+ChallengerAntiGapcloser(NS_Annie.misc, function(o, s) if not D.stun then return end if ValidTarget(o, W.range) and Castable[1] then Spell[1]:Cast(o) elseif ValidTarget(o, Q.range) and Castable[0] then CastTargetSpell(o, _Q) end end)
+ChallengerInterrupter(NS_Annie.misc, function(o, s) if not D.stun then return end if ValidTarget(o, W.range) and Castable[1] then Spell[1]:Cast(o) elseif ValidTarget(o, Q.range) and Castable[0] then CastTargetSpell(o, _Q) end end)
 -----------------------------------
 
 local function CastR(target)
@@ -213,7 +205,7 @@ end
 local function CheckR()
 	if NS_Annie.ult.u1:Value() == 1 then
 		local target = Target[3]:GetTarget()
-		if ValidTarget(target, R.range) and GetHP2(target) < Damage[3](target) and (not Ready[0] or (Ready[0] and ValidTarget(target, Q.range) and GetHP2(target) > Damage[0](target))) and (not Ready[1] or (Ready[1] and ValidTarget(target, W.range) and GetHP2(target) > Damage[1](target))) then CastR(target) end
+		if ValidTarget(target, R.range) and GetHP2(target) < Damage[3](target) and (not Castable[0] or (Castable[0] and ValidTarget(target, Q.range) and GetHP2(target) > Damage[0](target))) and (not Castable[1] or (Castable[1] and ValidTarget(target, W.range) and GetHP2(target) > Damage[1](target))) then CastR(target) end
 	else
 		local pos, hit = GetFarmPosition2(R.width, R.range, Enemies)
 		if hit >= NS_Annie.ult.u2:Value() then CastSkillShot(_R, pos) end
@@ -228,9 +220,9 @@ local function KillSteal()
 			if hp > 0 and dmg > hp then CastTargetSpell(enemy, Ignite) end
 		end
 
-		if Ready[1] and NS_Annie.W.ks:Value() and ManaCheck(NS_Annie.W.MPks:Value()) and ValidTarget(enemy, W.range) and GetHP2(enemy) < Damage[1](enemy) then 
+		if Castable[1] and NS_Annie.W.ks:Value() and ManaCheck(NS_Annie.W.MPks:Value()) and ValidTarget(enemy, W.range) and GetHP2(enemy) < Damage[1](enemy) then 
 			CastW(enemy)
-		elseif Ready[0] and NS_Annie.Q.ks:Value() and ManaCheck(NS_Annie.Q.MPks:Value()) and ValidTarget(enemy, Q.range) and GetHP2(enemy) < Damage[0](enemy) then 
+		elseif Castable[0] and NS_Annie.Q.ks:Value() and ManaCheck(NS_Annie.Q.MPks:Value()) and ValidTarget(enemy, Q.range) and GetHP2(enemy) < Damage[0](enemy) then 
 			CastQ(enemy)
 		end
 	end
@@ -239,10 +231,10 @@ end
 local function JungleClear()
 	if not Cr.mmob then return end
 	local mob = Cr.mmob
-	if Ready[1] and NS_Annie.W.jc:Value() and ManaCheck(NS_Annie.W.MPjc:Value()) and ValidTarget(mob, W.range) then
+	if Castable[1] and NS_Annie.W.jc:Value() and ManaCheck(NS_Annie.W.MPjc:Value()) and ValidTarget(mob, W.range) then
 		CastSkillShot(_W, mob.pos)
 	end
-	if Ready[0] and NS_Annie.Q.jc:Value() and ManaCheck(NS_Annie.Q.MPjc:Value()) and ValidTarget(mob, Q.range) then
+	if Castable[0] and NS_Annie.Q.jc:Value() and ManaCheck(NS_Annie.Q.MPjc:Value()) and ValidTarget(mob, Q.range) then
 		CastTargetSpell(mob, _Q)
 	end
 end
@@ -281,14 +273,14 @@ end
 
 local function UseE(unit, spell)
 	if mode == "Combo" and NS_Annie.E.cb:Value() and unit.type == "AIHeroClient" and unit.team == MINION_ENEMY then
-		if spell.target == myHero and Ready[2] then
+		if spell.target == myHero and Castable[2] then
 			CastSpell(_E)
 		end
 	end
 end
 
 local function CheckSpell(unit, spell)
-	if unit == myHero and spell.name:lower() == "disintegrate" and D.passive == 3 and spell.target.type == "AIHeroClient" and Ready[2] then
+	if unit == myHero and spell.name:lower() == "disintegrate" and D.passive == 3 and spell.target.type == "AIHeroClient" and Castable[2] then
 		CastSpell(_E)
 	end
 end
@@ -312,26 +304,26 @@ end
 
 local function Tick()
 	if myHero.dead then return end
-	for i = 0, 3 do Ready[i] = IsReady(i) end
-	local QTarget = Ready[0] and Target[0]:GetTarget()
-	local WTarget = Ready[1] and Target[1]:GetTarget()
+	for i = 0, 3 do Castable[i] = IsReady(i) end
+	local QTarget = Castable[0] and Target[0]:GetTarget()
+	local WTarget = Castable[1] and Target[1]:GetTarget()
 	mode = Mix:Mode()
 	if mode == "Combo" and CCast then
-		if Ready[0] and NS_Annie.Q.cb:Value() then CastQ(QTarget) end
-		if Ready[1] and NS_Annie.W.cb:Value() then CastW(WTarget) end
+		if Castable[0] and NS_Annie.Q.cb:Value() then CastQ(QTarget) end
+		if Castable[1] and NS_Annie.W.cb:Value() then CastW(WTarget) end
     end
 
-    if Ready[3] and not D.Teddy then
+    if Castable[3] and not D.Teddy then
     	local cbON = NS_Annie.ult.u3:Value()
 		if (cbON and mode == "Combo" and CCast) or not cbON then CheckR() end
-		if D.Flash and IsReady(D.Flash) and Ready[3] and NS_Annie.ult.fult.eb1:Value() and ((NS_Annie.ult.fult.eb2:Value() == 1 and mode == "Combo") or NS_Annie.ult.fult.eb2:Value() == 2) then FlashR() end
+		if D.Flash and IsReady(D.Flash) and Castable[3] and NS_Annie.ult.fult.eb1:Value() and ((NS_Annie.ult.fult.eb2:Value() == 1 and mode == "Combo") or NS_Annie.ult.fult.eb2:Value() == 2) then FlashR() end
     end
 
-    if Ready[2] and NS_Annie.misc.E.eb1:Value() and ManaCheck(NS_Annie.misc.E.eb2:Value()) and EnemiesAround(myHero.pos, 1500) == 0 and not D.stun then CastSpell(_E) end
+    if Castable[2] and NS_Annie.misc.E.eb1:Value() and ManaCheck(NS_Annie.misc.E.eb2:Value()) and EnemiesAround(myHero.pos, 1500) == 0 and not D.stun then CastSpell(_E) end
 
     if mode == "Harass" and CCast then
-		if Ready[0] and NS_Annie.Q.hr:Value() and ManaCheck(NS_Annie.Q.MPhr:Value()) and ((NS_Annie.Q.s1:Value() and not D.stun) or not NS_Annie.Q.s1:Value()) then CastQ(QTarget) end
-		if Ready[1] and NS_Annie.W.hr:Value() and ManaCheck(NS_Annie.W.MPhr:Value()) and ((NS_Annie.W.s:Value() and not D.stun) or not NS_Annie.W.s:Value()) then CastW(WTarget) end
+		if Castable[0] and NS_Annie.Q.hr:Value() and ManaCheck(NS_Annie.Q.MPhr:Value()) and ((NS_Annie.Q.s1:Value() and not D.stun) or not NS_Annie.Q.s1:Value()) then CastQ(QTarget) end
+		if Castable[1] and NS_Annie.W.hr:Value() and ManaCheck(NS_Annie.W.MPhr:Value()) and ((NS_Annie.W.s:Value() and not D.stun) or not NS_Annie.W.s:Value()) then CastW(WTarget) end
     end
 
     if mode == "LaneClear" and CCast then
@@ -357,7 +349,7 @@ local function Drawings()
 	DrawRange()
 	if mode == "LaneClear" or mode == "LastHit" then
 		Cr:Update()
-		if Ready[0] then QFarmAndDraw() end
+		if Castable[0] then QFarmAndDraw() end
 	end
 end
 ------------------------------------
