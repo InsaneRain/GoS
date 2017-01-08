@@ -1,6 +1,6 @@
---[[ Mix Lib Version 0.12 ]]--
+--[[ Mix Lib Version 0.125 ]]--
 
-local MixLibVersion = 0.12
+local MixLibVersion = 0.125
 local Reback = {_G.AttackUnit, _G.MoveToXYZ, _G.CastSkillShot, _G.CastSkillShot2, _G.CastSpell, _G.CastTargetSpell}
 local OW, gw, Check, RIP = mc_cfg_orb.orb:Value(), {"Combo", "Harass", "LaneClear", "LastHit"}, Set {5, 8, 21, 22}, function() end
 local attack_check, move_check, fix = false, false, {["Annie"] = {-7.5, -17}, ["Jhin"]  = {-7, -6}, ["Other"] = {1.5, 0}}
@@ -200,6 +200,7 @@ end
 
 local lastMove = 0
 function MixLib:Move(Pos)
+	Pos = Pos or GetMousePos()
 	if lastMove + 0.32 < GetGameTimer() then
 		if GetDistanceSqr(Pos) > 10000 then MoveToXYZ(Pos) end
 		lastMove = GetGameTimer()
@@ -300,7 +301,7 @@ function DCircle:Draw(Pos, bonusQuality)
 end
 
 function UpdateColor(color, step)
-	step = step or 10
+	step = step or 5
 	local R, G, B = color[1], color[2], color[3]
 	if (R == 255 and B == 0) then
 		G = min(255, G + step);
