@@ -1,4 +1,4 @@
---[[ NEET Series Version 0.26
+--[[ NEET Series Version 0.265
 	_____   ___________________________   ________           _____             
 	___  | / /__  ____/__  ____/__  __/   __  ___/______________(_)____________
 	__   |/ /__  __/  __  __/  __  /      _____ \_  _ \_  ___/_  /_  _ \_  ___/
@@ -6,7 +6,7 @@
 	/_/ |_/  /_____/  /_____/  /_/        /____/ \___//_/    /_/  \___//____/  
 
 ---------------------------------------]]
-local NEETSeries_Version = 0.26
+local NEETSeries_Version = 0.265
 local function NEETSeries_Print(text) PrintChat(string.format("<font color=\"#4169E1\"><b>[NEET Series]:</b></font><font color=\"#FFFFFF\"> %s</font>", tostring(text))) end
 
 if not FileExist(COMMON_PATH.."MixLib.lua") then
@@ -113,7 +113,7 @@ local pred = {"OpenPredict", "GPrediction", "GoSPrediction"}
 function LoadPredMenu(menu)
 	menu:DropDown("cpred", "Choose Prediction:", 1, pred, function(val) NEETSeries_Print("2x F6 to ally using "..pred[val]) end)
 	menu:Info("currentPred", "Current Prediction: "..pred[menu.cpred:Value()])
-	if menu.cpred:Value() == 2 then require("GPrediction") end
+	if menu.cpred:Value() == 2 and FileExist(COMMON_PATH.."GPrediction.lua") then require("GPrediction") end
 end
 
 local OPM = {
@@ -141,8 +141,8 @@ end
 local function CastTo(pos, slot, css2)
 	if not css2 then
 		CastSkillShot(slot, pos)
-	else
-		if GetDistanceSqr(pos) <= css2*css2 then CastSkillShot2(slot, pos) end
+	elseif GetDistanceSqr(pos) <= css2*css2 then
+		CastSkillShot2(slot, pos)
 	end
 end
 
@@ -218,7 +218,7 @@ do
 	else
 		if NS_Menu.Plugin:Value() then require("NS_"..myHero.charName) end
 	end
-	--Analytics("NEETSeries", "Ryzuki", true)
+	Analytics("NEETSeries", "Ryzuki", true)
 end
 
 --[[ -------------> Change log <-------------
