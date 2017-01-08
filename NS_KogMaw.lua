@@ -8,21 +8,17 @@
 	(__|  \__)\"_____/   \_______)       |___|\__/|___|(___/    \___)|___/    \___|
 
 ---------------------------------------]]
-local Enemies, C, HPBar, CCast, mode = { }, 0, { }, false, ""
-local huge, min = math.huge, math.min
+local Enemies, HPBar, CCast, mode = LoadEnemies(), { }, false, ""
 local Check = Set {"Run", "Idle1", "Channel_WNDUP"}
 local Ignite = Mix:GetSlotByName("summonerdot", 4, 5)
-local pred, StrID, StrN = {"OpenPredict", "GPrediction", "GosPrediction"}, {"cb", "hr", "lc", "jc", "ks", "lh"}, {"Combo", "Harass", "LaneClear", "JungleClear", "KillSteal", "LastHit"}
-local function GetData(spell) return myHero:GetSpellData(spell) end
 local function CalcDmg(type, target, dmg) if type == 1 then return CalcPhysicalDamage(myHero, target, dmg) end return CalcMagicalDamage(myHero, target, dmg) end
 local function IsSReady(spell) return CanUseSpell(myHero, spell) == 0 or CanUseSpell(myHero, spell) == 8 end
 local function ManaCheck(value) return value <= GetPercentMP(myHero) end
-local function EnemiesAround(pos, range) return CountObjectsNearPos(pos, nil, range, Enemies, MINION_ENEMY) end
-local function LoadGPred(value) if (value == 2 and not gPred) then require('GPrediction') end end
+local function EnemiesAround(pos, range) return CountObjectsNearPos(pos, nil, range, Enemies.List, MINION_ENEMY) end
 
-local function AddMenu(Menu, ID, Pred, Text, Tbl, MP)
+local function AddMenu(Menu, ID, Text, Tbl, MP)
+	local StrID, StrN = {"cb", "hr", "lc", "jc", "ks", "lh"}, {"Combo", "Harass", "LaneClear", "JungleClear", "KillSteal", "LastHit"}
 	Menu:Menu(ID, Text)
-	if Pred then Menu[ID]:DropDown("Pred", "Choose Prediction:", 1, pred) end
 	for i = 1, 6 do
 		if Tbl[i] then Menu[ID]:Boolean(StrID[i], "Use in "..StrN[i], true) end
 		if MP and i > 1 and Tbl[i] then Menu[ID]:Slider("MP"..StrID[i], "Enable in "..StrN[i].." if %MP >=", MP, 1, 100, 1) end
@@ -31,20 +27,22 @@ end
 
 local function SetSkin(Menu, skintable)
 	local ChangeSkin = function(id) myHero:Skin(id == #skintable and -1 or id) end
-	Menu:DropDown(myHero.charName.."_SetSkin", myHero.charName.." SkinChanger", #skintable, skintable, function(id) ChangeSkin(id) end)
-	if (Menu[myHero.charName.."_SetSkin"]:Value() ~= #skintable) then ChangeSkin(Menu[myHero.charName.."_SetSkin"]:Value()) end
+	Menu:DropDown("SetSkin", myHero.charName.." SkinChanger", #skintable, skintable, function(id) ChangeSkin(id) end)
+	if (Menu["SetSkin"]:Value() ~= #skintable) then ChangeSkin(Menu["SetSkin"]:Value()) end
 end
 
 local function DrawDmgOnHPBar(Menu, Color, Text)
-	for i = 1, C do
-		Menu:Menu(Enemies[i].charName, "Draw Dmg HPBar "..Enemies[i].charName)
-		HPBar[i] = DrawDmgHPBar(Menu[Enemies[i].charName], Enemies[i], Color, Text)
+	for i = 1, Enemies.Count, 1 do
+		local enemy = Enemies.List[i]
+		Menu:Menu(i, "Draw Dmg HPBar "..enemy.charName)
+		HPBar[i] = DrawDmgHPBar(Menu[i], enemy, Color, Text)
 	end
 end
 
 local GetLineFarmPosition2 = function(range, width, objects)
 	local Pos, Hit = nil, 0
-	for _, m in pairs(objects) do
+	for i = 1, #objects, 1 do
+		local m = objects[i]
 		if ValidTarget(m, range) then
 			local count = CountObjectsOnLineSegment(Vector(myHero), Vector(m), width, objects, MINION_ENEMY)
 			if not Pos or CountObjectsOnLineSegment(Vector(myHero), Vector(Pos), width, objects, MINION_ENEMY) < count then
@@ -58,7 +56,8 @@ end
 
 local GetFarmPosition2 = function(range, width, objects)
 	local Pos, Hit = nil, 0
-	for _, m in pairs(objects) do
+	for i = 1, #objects, 1 do
+		local m = objects[i]
 		if ValidTarget(m, range) then
 			local count = CountObjectsNearPos(Vector(m), nil, width, objects, MINION_ENEMY)
 			if not Pos or CountObjectsNearPos(Vector(Pos), nil, width, objects, MINION_ENEMY) < count then
@@ -69,17 +68,6 @@ local GetFarmPosition2 = function(range, width, objects)
 	end
 		return Pos, Hit
 end
-
-OnLoad(function()
-	for i = 1, heroManager.iCount do
-		local hero = heroManager:getHero(i)
-		if hero.team == MINION_ENEMY then
-			C = C + 1
-			Enemies[C] = hero
-		end
-	end
-	table.sort(Enemies, function(a, b) return a.charName < b.charName end)
-end)
 
 OnAnimation(function(u, a)
 	if u ~= myHero or u.dead then return end
@@ -96,61 +84,64 @@ OnProcessSpellComplete(function(u, a)
 	if u ~= myHero or u.dead then return end
 	if a.name:lower():find("attack") then CCast = true return end
 end)
-
 --------------------------------------------------------------------------------
-local Q = { Range = GetData(_Q).range,                                 Speed = 1450,      Delay = 0.25, Width = 80,  Damage = function(unit) return CalcDmg(2, unit, 30 + 50*GetData(_Q).level + 0.5*myHero.ap) end}
-local E = { Range = GetData(_E).range,                                 Speed = 1100,      Delay = 0.25, Width = 120, Damage = function(unit) return CalcDmg(2, unit, 10 + 50*GetData(_E).level + 0.7*myHero.ap) end}
-local R = { Range = function() return 900 + 300*GetData(_R).level end, Speed = huge,      Delay = 1,    Width = 235, Damage = function(unit) local bonus = GetPercentHP(unit) < 40 and 2 or (1 + min(0.5, (100 - GetPercentHP(unit))*0.0083)) return CalcDmg(2, unit, bonus*(60 + 40*GetData(_R).level + 0.25*myHero.ap + 0.65*myHero.totalDamage)) end, Count = 1}
-local Cr, target, WRange = __MinionManager(E.Range, E.Range), nil, 0
+
+local Data = {
+	[0] = { range = myHero:GetSpellData(_Q).range + myHero.boundingRadius,           speed = 1450,      delay = 0.25, width = 140, type = "linear", colNum = 1, slot = 0 },
+	[2] = { range = myHero:GetSpellData(_E).range + myHero.boundingRadius,           speed = 1100,      delay = 0.25, width = 240, type = "linear", colNum = 0, slot = 2 },
+	[3] = { range = 900 + 300*myHero:GetSpellData(_R).level + myHero.boundingRadius, speed = math.huge, delay = 1,    width = 480, type = "circular", colNum = 0, slot = 3 }
+}
+local Damage = {
+	[0] = function(unit) return CalcDmg(2, unit, 30 + 50*myHero:GetSpellData(_Q).level + 0.5*myHero.ap) end,
+	[2] = function(unit) return CalcDmg(2, unit, 15 + 50*myHero:GetSpellData(_E).level + 0.7*myHero.ap) end,
+	[3] = function(unit) local bonus = GetPercentHP(unit) < 40 and 2 or (1 + math.min(0.5, math.round((100 - GetPercentHP(unit))*0.83))) return CalcDmg(2, unit, bonus*(60 + 40*myHero:GetSpellData(_R).level + 0.25*myHero.ap + 0.65*myHero.totalDamage)) end
+}
+local Castable = {
+	[0] = false,
+	[1] = false,
+	[2] = false,
+	[3] = false
+}
+
+local Cr, WRange, RCount = __MinionManager(Data[2].range, Data[2].range), 0, GotBuff(myHero, "kogmawlivingartillerycost")
 local function UpdateDelay(v)
 	if v then
-		Q.Prediction.data.hc = 0.125
-		E.Prediction.data.hc = 0.125
-		R.R1Prediction.data.hc = 0.875
-		R.R2Prediction.data.hc = 0.875
-		R.R3Prediction.data.hc = 0.875
+		Data[0].delay = 0.125
+		Data[2].delay = 0.125
+		Data[3].delay = 0.875
+		Data[3].delay = 0.875
+		Data[3].delay = 0.875
 		return
 	end
-	Q.Prediction.data.hc = 0.25
-	E.Prediction.data.hc = 0.25
-	R.R1Prediction.data.hc = 1
-	R.R2Prediction.data.hc = 1
-	R.R3Prediction.data.hc = 1
+	Data[0].delay = 0.25
+	Data[2].delay = 0.25
+	Data[3].delay = 1
+	Data[3].delay = 1
+	Data[3].delay = 1
 end
 
 local NS_Kog = MenuConfig("NS_KogMaw", "[NEET Series] - Kog'Maw")
 
 	--[[ Q Settings ]]--
-	AddMenu(NS_Kog, "Q", true, "Q Settings", {true, true, false, true, true, false}, 15)
-	NS_Kog.Q.Pred.callback = function(v) Q.Prediction.Pred = pred[v] LoadGPred(v) end
-	LoadGPred(NS_Kog.Q.Pred:Value())
+	AddMenu(NS_Kog, "Q", "Q Settings", {true, true, false, true, true, false}, 15)
 
 	--[[ W Settings ]]--
-	AddMenu(NS_Kog, "W", false, "W Settings", {true, false, false, false, false, false})
+	AddMenu(NS_Kog, "W", "W Settings", {true, false, false, false, false, false})
 
 	--[[ E Settings ]]--
-	AddMenu(NS_Kog, "E", true, "E Settings", {true, true, true, true, true, false}, 15)
+	AddMenu(NS_Kog, "E", "E Settings", {true, true, true, true, true, false}, 15)
 	NS_Kog.E:Slider("h", "LaneClear if hit minions >=", 3, 1, 10, 1)
-	NS_Kog.E.Pred.callback = function(v) E.Prediction.Pred = pred[v] LoadGPred(v) end
-	LoadGPred(NS_Kog.E.Pred:Value())
 
 	--[[ Ignite Settings ]]--
-	if Ignite then AddMenu(NS_Kog, "Ignite", false, "Ignite Settings", {false, false, false, false, true, false}) end
+	if Ignite then AddMenu(NS_Kog, "Ignite", "Ignite Settings", {false, false, false, false, true, false}) end
 
 		--[[ R Settings ]]--
-	AddMenu(NS_Kog, "R", true, "R Settings", {true, true, false, true, false, false}, 15)
+	AddMenu(NS_Kog, "R", "R Settings", {true, true, false, true, false, false}, 15)
 	NS_Kog.R:Boolean("lc", "Use in LaneClear", false)
 	NS_Kog.R:Slider("MPlc", "Enable on LaneClear if %MP >=", 15, 1, 100, 1)
 	NS_Kog.R:Slider("h", "Use R if hit Minions >=", 3, 1, 10, 1)
 	NS_Kog.R:Boolean("ec", "R LaneClear if no enemy in 1200 range", true)
 	NS_Kog.R:Boolean("ks", "Use in KillSteal", true)
-	LoadGPred(NS_Kog.R.Pred:Value())
-	NS_Kog.R.Pred.callback = function(v)
-		R.R1Prediction.Pred = pred[v]
-		R.R2Prediction.Pred = pred[v]
-		R.R3Prediction.Pred = pred[v]
-		LoadGPred(v)
-	end
 
 	--[[ Drawings Menu ]]--
 	NS_Kog:Menu("dw", "Drawings Mode")
@@ -159,95 +150,83 @@ local NS_Kog = MenuConfig("NS_KogMaw", "[NEET Series] - Kog'Maw")
 	NS_Kog:Menu("misc", "Misc Mode")
 		NS_Kog.misc:Menu("rc", "Request Casting R")
 			NS_Kog.misc.rc:Boolean("R1", "R but save mana for W", true)
-			NS_Kog.misc.rc:Slider("R2", "Cast R if Stacks < x", 5, 1, 10, 1)
-			NS_Kog.misc.rc:Slider("R3", "R in Combo if %MP >= ", 10, 1, 100, 1)
-		NS_Kog.misc:Menu("hc", "Spell HitChance")
-			NS_Kog.misc.hc:Slider("Q", "Q Hit-Chance", 25, 1, 100, 1, function(value) Q.Prediction.data.hc = value*0.01 end)
-			NS_Kog.misc.hc:Slider("E", "E Hit-Chance", 25, 1, 100, 1, function(value) E.Prediction.data.hc = value*0.01 end)
-			NS_Kog.misc.hc:Slider("R", "R Hit-Chance", 40, 1, 100, 1, function(value) R.R1Prediction.data.hc = value*0.01 R.R2Prediction.data.hc = value*0.01 R.R3Prediction.data.hc = value*0.01 end)
+			NS_Kog.misc.rc:Slider("R2", "Cast R if Stacks <=", 5, 1, 10, 1)
+			NS_Kog.misc.rc:Slider("R3", "R in Combo if %MP >=", 10, 1, 100, 1)
 		NS_Kog.misc:Menu("sme", "Block Move (depend on as)")
 			NS_Kog.misc.sme:Info("ifo1", "Dangerous: if distance to enemy <= 300")
 			NS_Kog.misc.sme:Info("ifo2", "Kite: if distance to enemy > 600")
 			NS_Kog.misc.sme:Info("ifo3", "BlockMove: Other case")
         	NS_Kog.misc.sme:Boolean("b1", "Enable block move check", true)
         	NS_Kog.misc.sme:Slider("b2", "Enable if AttackSpeed >=", 1.7, 1.2, 2.5, 0.1)
-		SetSkin(NS_Kog.misc, {"Caterpillar", "Sonoran", "Monarch", "Reindeer", "Lion Dance", "Deep Sea", "Jurassic", "Battlecast", "Disable"})
+			SetSkin(NS_Kog.misc, {"Caterpillar", "Sonoran", "Monarch", "Reindeer", "Lion Dance", "Deep Sea", "Jurassic", "Battlecast", "Disable"})
+		LoadPredMenu(NS_Kog)
 -----------------------------------
 
-local Target = ChallengerTargetSelector(600, 1, true, nil, false, NS_Kog)
+UpdateDelay(GotBuff(myHero, "KogMawBioArcaneBarrage") > 0)
+local target = nil
+local Target = ChallengerTargetSelector(math.min(Data[0].range, Data[2].range), 1, true, nil, false, NS_Kog)
 Target.Menu.TargetSelector.TargetingMode.callback = function(id) Target.Mode = id end
 
-Q.Draw = DCircle(NS_Kog.dw, "Draw Q Range", Q.Range, ARGB(150, 0, 245, 255))
-WDraw  = DCircle(NS_Kog.dw, "Draw W Range", 625 + 30*GetData(_W).level, ARGB(150, 186, 85, 211))
-E.Draw = DCircle(NS_Kog.dw, "Draw E Range", E.Range, ARGB(150, 0, 217, 108))
-R.Draw = DCircle(NS_Kog.dw, "Draw R Range", R.Range(), ARGB(150, 89, 0 ,179))
-
-Q.Prediction = PredictSpell(_Q, Q.Delay, Q.Speed, Q.Width, Q.Range, true, 1, false, "linear", "Kog'Maw Q", NS_Kog.misc.hc.Q:Value()*0.01, pred[NS_Kog.Q.Pred:Value()])
-E.Prediction = PredictSpell(_E, E.Delay, E.Speed, E.Width, E.Range, false, 0, true, "linear", "Kog'Maw E", NS_Kog.misc.hc.E:Value()*0.01, pred[NS_Kog.E.Pred:Value()])
-R.R1Prediction = PredictSpell(_R, R.Delay, R.Speed, R.Width, 1200, false, 0, true, "circular", "Kog'Maw RLvl1", NS_Kog.misc.hc.R:Value()*0.01, pred[NS_Kog.R.Pred:Value()])
-R.R2Prediction = PredictSpell(_R, R.Delay, R.Speed, R.Width, 1500, false, 0, true, "circular", "Kog'Maw RLvl2", NS_Kog.misc.hc.R:Value()*0.01, pred[NS_Kog.R.Pred:Value()])
-R.R3Prediction = PredictSpell(_R, R.Delay, R.Speed, R.Width, 1800, false, 0, true, "circular", "Kog'Maw RLvl3", NS_Kog.misc.hc.R:Value()*0.01, pred[NS_Kog.R.Pred:Value()])
-UpdateDelay(GotBuff(myHero, "KogMawBioArcaneBarrage") > 0 and true or false)
+local Draw = {
+	[0] = DCircle(NS_Kog.dw, "Q", "Draw Q Range", Data[0].range, ARGB(150, 0, 245, 255)),
+	[1] = DCircle(NS_Kog.dw, "W", "Draw W Range", WRange, ARGB(150, 186, 85, 211)),
+	[2] = DCircle(NS_Kog.dw, "E", "Draw E Range", Data[2].range, ARGB(150, 0, 217, 108)),
+	[3] = DCircle(NS_Kog.dw, "R", "Draw R Range", Data[3].range, ARGB(150, 89, 0 ,179))
+}
+local Spells = {
+	[0] = AddSpell(Data[0], NS_Kog.Q, NS_Kog.cpred:Value()),
+	[2] = AddSpell(Data[2], NS_Kog.E, NS_Kog.cpred:Value()),
+	[3] = AddSpell(Data[3], NS_Kog.R, NS_Kog.cpred:Value())
+}
 -----------------------------------
 
 local function CastR(target)
-	if not ValidTarget(target, R.Range()) then return end
-	if GetData(_R).level == 1 then
-		R.R1Prediction:Cast(target)
-	elseif GetData(_R).level == 2 then
-		R.R2Prediction:Cast(target)
-	elseif GetData(_R).level == 3 then
-		R.R3Prediction:Cast(target)
-	end
+	if not ValidTarget(target, Data[3].range) then return end
+		Spells[3]:Cast(target)
 end
 
 local function CastE(target)
-	if not ValidTarget(target, E.Range) then return end
-		E.Prediction:Cast(target)
-end
-
-local function CastW()
-	if not target then return end
-	if (IsReady(_E) and ValidTarget(target, WRange)) or (not IsReady(_E) and ValidTarget(target, 600 + 25*GetData(_W).level)) then CastSpell(_W) end
+	if not ValidTarget(target, Data[2].range) then return end
+		Spells[2]:Cast(target)
 end
 
 local function CastQ(target)
-	if not ValidTarget(target, Q.Range) then return end
-		Q.Prediction:Cast(target)
+	if not ValidTarget(target, Data[0].range) then return end
+		Spells[0]:Cast(target)
 end
 
 local function KillSteal()
-	for i = 1, C do
-		local enemy = Enemies[i]
+	for i = 1, Enemies.Count, 1 do
+		local enemy = Enemies.List[i]
 		if Ignite and IsReady(Ignite) and NS_Kog.Ignite.ks:Value() and ValidTarget(enemy, 600) then
 			local hp, dmg = Mix:HealthPredict(enemy, 2500, "OW") + enemy.hpRegen*2.5 + enemy.shieldAD, 50 + 20*myHero.level
 			if hp > 0 and dmg > hp then CastTargetSpell(enemy, Ignite) end
 		end
 
-		if IsReady(_Q) and NS_Kog.Q.ks:Value() and ManaCheck(NS_Kog.Q.MPks:Value()) and GetHP2(enemy) < Q.Damage(enemy) then
+		if Castable[0] and NS_Kog.Q.ks:Value() and ManaCheck(NS_Kog.Q.MPks:Value()) and GetHP2(enemy) < Damage[0](enemy) then
 			CastQ(enemy)
 		end
 
-		if IsReady(_R) and NS_Kog.R.ks:Value() and GetHP2(enemy) < R.Damage(enemy) then
+		if Castable[3] and NS_Kog.R.ks:Value() and GetHP2(enemy) < Damage[3](enemy) then
 			CastR(enemy)
 		end
 
-		if IsReady(_E) and NS_Kog.E.ks:Value() and ManaCheck(NS_Kog.E.MPks:Value()) and GetHP2(enemy) < E.Damage(enemy) then
+		if Castable[2] and NS_Kog.E.ks:Value() and ManaCheck(NS_Kog.E.MPks:Value()) and GetHP2(enemy) < Damage[2](enemy) then
 			CastE(enemy)
 		end
 	end
 end
 
 local function LaneClear()
-	if IsReady(_R) and NS_Kog.R.lc:Value() and ManaCheck(NS_Kog.R.MPlc:Value()) then
-		if NS_Kog.misc.rc.R2:Value() <= R.Count then return end
+	if Castable[3] and NS_Kog.R.lc:Value() and ManaCheck(NS_Kog.R.MPlc:Value()) then
+		if RCount > NS_Kog.misc.rc.R2:Value() then return end
 		if NS_Kog.R.ec:Value() and EnemiesAround(myHero.pos, 1200) > 0 then return end
-		if NS_Kog.misc.rc.R1:Value() and myHero.mana - 40*R.Count < 40 then return end
-		local RPos, RHit = GetFarmPosition2(R.Range(), R.Width, Cr.tminion)
+		if NS_Kog.misc.rc.R1:Value() and myHero.mana - 40*RCount < 40 then return end
+		local RPos, RHit = GetFarmPosition2(Data[3].range, Data[3].width, Cr.tminion)
 		if RHit >= NS_Kog.R.h:Value() then CastSkillShot(_R, RPos) end
     end
-    if IsReady(_E) and NS_Kog.E.lc:Value() and ManaCheck(NS_Kog.E.MPlc:Value()) then
-    	local EPos, EHit = GetLineFarmPosition2(E.Range, E.Width, Cr.tminion)
+    if Castable[2] and NS_Kog.E.lc:Value() and ManaCheck(NS_Kog.E.MPlc:Value()) then
+    	local EPos, EHit = GetLineFarmPosition2(Data[2].range, Data[2].width, Cr.tminion)
 		if EHit >= NS_Kog.E.h:Value() then CastSkillShot(_E, EPos) end
 	end
 end
@@ -255,28 +234,28 @@ end
 local function JungleClear()
 	if not Cr.mmob then return end
 	local mob = Cr.mmob
-	if IsReady(_Q) and NS_Kog.Q.jc:Value() and ManaCheck(NS_Kog.Q.MPjc:Value()) and ValidTarget(mob, Q.Range) then
-		CastSkillShot(_Q, Vector(mob))
+	if Castable[0] and NS_Kog.Q.jc:Value() and ManaCheck(NS_Kog.Q.MPjc:Value()) and ValidTarget(mob, Data[0].range) then
+		CastSkillShot(_Q, mob.pos)
 	end
-	if IsReady(_E) and NS_Kog.E.jc:Value() and ManaCheck(NS_Kog.E.MPjc:Value()) then
-		CastSkillShot(_E, Vector(mob))
+	if Castable[2] and NS_Kog.E.jc:Value() and ManaCheck(NS_Kog.E.MPjc:Value()) then
+		CastSkillShot(_E, mob.pos)
 	end
-	if IsReady(_R) and NS_Kog.R.jc:Value() and ManaCheck(NS_Kog.R.MPjc:Value()) and ValidTarget(mob, R.Range()) and NS_Kog.misc.rc.R2:Value() > R.Count and ((NS_Kog.misc.rc.R1:Value() and myHero.mana - 40*R.Count > 40) or not NS_Kog.misc.rc.R1:Value()) then
-		CastSkillShot(_R, Vector(mob))
+	if Castable[3] and NS_Kog.R.jc:Value() and ManaCheck(NS_Kog.R.MPjc:Value()) and ValidTarget(mob, Data[3].range) and RCount <= NS_Kog.misc.rc.R2:Value() and ((NS_Kog.misc.rc.R1:Value() and myHero.mana - 40*RCount > 40) or not NS_Kog.misc.rc.R1:Value()) then
+		CastSkillShot(_R, mob.pos)
 	end
 end
 
 local function DrawRange()
-	local myPos = Vector(myHero)
-	if IsSReady(_Q) then Q.Draw:Draw(myPos) end
-	if IsSReady(_W) then WDraw:Draw(myPos) end
-	if IsSReady(_E) then E.Draw:Draw(myPos) end
-	if IsSReady(_R) then R.Draw:Draw(myPos) end
+	local myPos = myHero.pos
+	if IsSReady(_Q) then Draw[0]:Draw(myPos) end
+	if IsSReady(_W) then Draw[1]:Draw(myPos) end
+	if IsSReady(_E) then Draw[2]:Draw(myPos) end
+	if IsSReady(_R) then Draw[3]:Draw(myPos) end
 end
 
 local function DmgHPBar()
-	for i = 1, C do
-		if ValidTarget(Enemies[i], R.Range()*2) and HPBar[i] then
+	for i = 1, Enemies.Count, 1 do
+		if ValidTarget(Enemies.List[i], Data[3].range*2) and HPBar[i] then
 			HPBar[i]:UpdatePos()
 			HPBar[i]:Draw()
 		end
@@ -284,28 +263,30 @@ local function DmgHPBar()
 end
 
 local function Updating()
-	WRange = 625 + 30*GetData(_W).level
-	for i = 1, C do
-		local enemy = Enemies[i]
-		if ValidTarget(enemy, R.Range()*2) and HPBar[i] then
-			HPBar[i]:SetValue(1, R.Damage(enemy), IsSReady(_R))
-			HPBar[i]:SetValue(2, Q.Damage(enemy), IsSReady(_Q))
-			HPBar[i]:SetValue(3, E.Damage(enemy), IsSReady(_E))
+	for i = 0, 3 do Castable[i] = IsReady(i) end
+	WRange = 675 + 20*myHero:GetSpellData(_W).level
+	Data[3].range = 900 + 300*myHero:GetSpellData(3).level + myHero.boundingRadius
+	for i = 1, Enemies.Count, 1 do
+		local enemy = Enemies.List[i]
+		if ValidTarget(enemy, Data[3].range*2) and HPBar[i] then
+			HPBar[i]:SetValue(1, Damage[3](enemy), IsSReady(_R))
+			HPBar[i]:SetValue(2, Damage[0](enemy), IsSReady(_Q))
+			HPBar[i]:SetValue(3, Damage[2](enemy), IsSReady(_E))
 			HPBar[i]:CheckValue()
 		end
 	end
-	if ((IsReady(_W) and EnemiesAround(myHero.pos, WRange) == 0) or (not IsReady(_W) and EnemiesAround(myHero.pos, 565) == 0)) then Target.range = E.Range end
-	if IsReady(_R) then R.Draw:Update("Range", R.Range()) end
-	if IsReady(_W) then WDraw:Update("Range", WRange) end
-	Mix:ForceTarget(target)
+
+	if Castable[1] then Draw[1]:Update("range", WRange) end
+	if Castable[3] then Draw[3]:Update("range", Data[3].range) end
+	target = Target:GetTarget()
 end
 
 local function GetRTarget()
 	local RTarget = nil
-	for i = 1, C do
-		local enemy = Enemies[i]
-		if ValidTarget(enemy, R.Range()) then
-			if not RTarget or GetHP2(enemy) - R.Damage(enemy) < GetHP2(RTarget) - R.Damage(RTarget) then
+	for i = 1, Enemies.Count, 1 do
+		local enemy = Enemies.List[i]
+		if ValidTarget(enemy, Data[3].range) then
+			if not RTarget or GetHP2(enemy) - Damage[3](enemy) < GetHP2(RTarget) - Damage[3](RTarget) then
 				RTarget = enemy
 			end
 		end
@@ -315,52 +296,46 @@ end
 
 local function UpdateBuff(unit, buff)
 	if unit == myHero then
-		if buff.Name:lower() == "kogmawlivingartillerycost" then R.Count = buff.Count end
+		if buff.Name:lower() == "kogmawlivingartillerycost" then RCount = buff.Count end
 		if buff.Name:lower() == "kogmawbioarcanebarrage" then
 			UpdateDelay(true)
-			Target.range = WRange
 		end
 	end
 end
 
 local function RemoveBuff(unit, buff)
 	if unit == myHero then
-		if buff.Name:lower() == "kogmawlivingartillerycost" then R.Count = 1 end
+		if buff.Name:lower() == "kogmawlivingartillerycost" then RCount = 1 end
 		if buff.Name:lower() == "kogmawbioarcanebarrage" then
 			UpdateDelay(false)
-			Target.range = 600
 		end
     end
 end
 
 ---------------------------------------------
 local function Tick()
-	if myHero.dead or not Enemies[C] then return end
+	if myHero.dead then return end
 	Updating()
-	target = Target:GetTarget()
 	mode = Mix:Mode()
+	Mix:ForceTarget(target)
 
-	if target and mode == "Combo" and NS_Kog.misc.sme.b1:Value() and 0.625*myHero.attackSpeed >= NS_Kog.misc.sme.b2:Value() then
-		if EnemiesAround(myHero.pos, 300) > 0 or (GetDistance(target) >= 300 and GetDistance(target) <= myHero.range - 85) then
-			Mix:BlockMovement(true)
-		else
-			Mix:BlockMovement(false)
-		end
+	if target and mode == "Combo" and EnemiesAround(myHero.pos, 300) > 0 and NS_Kog.misc.sme.b1:Value() and 0.625*myHero.attackSpeed >= NS_Kog.misc.sme.b2:Value() then
+		Mix:BlockMovement(true)
 	else
 		Mix:BlockMovement(false)
 	end
 
 	if mode == "Combo" and CCast then
-		if IsReady(_E) and NS_Kog.E.cb:Value() then CastE(target) end
-		if IsReady(_W) and NS_Kog.W.cb:Value() then CastW() end
-		if IsReady(_Q) and NS_Kog.Q.cb:Value() then CastQ(target) end
-		if IsReady(_R) and NS_Kog.R.cb:Value() and ManaCheck(NS_Kog.misc.rc.R3:Value()) and NS_Kog.misc.rc.R2:Value() > R.Count and ((NS_Kog.misc.rc.R1:Value() and myHero.mana - 40*R.Count >= 40) or not NS_Kog.misc.rc.R1:Value()) then CastR(GetRTarget()) end
+		if Castable[2] and NS_Kog.E.cb:Value() then CastE(target) end
+		if Castable[1] and NS_Kog.W.cb:Value() and ValidTarget(target, WRange - 80) then CastSpell(1) end
+		if Castable[0] and NS_Kog.Q.cb:Value() then CastQ(target) end
+		if Castable[3] and NS_Kog.R.cb:Value() and ManaCheck(NS_Kog.misc.rc.R3:Value()) and RCount <= NS_Kog.misc.rc.R2:Value() and ((NS_Kog.misc.rc.R1:Value() and myHero.mana - 40*RCount >= 40) or not NS_Kog.misc.rc.R1:Value()) then CastR(GetRTarget()) end
 	end
 
     if mode == "Harass" and CCast then
-		if IsReady(_E) and NS_Kog.E.hr:Value() and ManaCheck(NS_Kog.E.MPhr:Value()) then CastE(target) end
-		if IsReady(_Q) and NS_Kog.Q.hr:Value() and ManaCheck(NS_Kog.Q.MPhr:Value()) then CastE(target) end
-		if IsReady(_R) and NS_Kog.R.hr:Value() and ManaCheck(NS_Kog.R.MPhr:Value()) and NS_Kog.misc.rc.R2:Value() > R.Count and ((NS_Kog.misc.rc.R1:Value() and myHero.mana - 40*R.Count >= 40) or not NS_Kog.misc.rc.R1:Value()) then CastR(GetRTarget()) end
+		if Castable[2] and NS_Kog.E.hr:Value() and ManaCheck(NS_Kog.E.MPhr:Value()) then CastE(target) end
+		if Castable[0] and NS_Kog.Q.hr:Value() and ManaCheck(NS_Kog.Q.MPhr:Value()) then CastE(target) end
+		if Castable[3] and NS_Kog.R.hr:Value() and ManaCheck(NS_Kog.R.MPhr:Value()) and RCount <= NS_Kog.misc.rc.R2:Value() and ((NS_Kog.misc.rc.R1:Value() and myHero.mana - 40*RCount >= 40) or not NS_Kog.misc.rc.R1:Value()) then CastR(GetRTarget()) end
 	end
 
 	if mode == "LaneClear" then
@@ -375,7 +350,7 @@ local function Tick()
 end
 
 local function Drawings()
-	if myHero.dead or not Enemies[C] then return end
+	if myHero.dead then return end
 	DmgHPBar()
 	DrawRange()
 end
