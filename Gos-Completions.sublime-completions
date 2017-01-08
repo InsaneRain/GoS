@@ -199,9 +199,9 @@
 		{"trigger": "GetObjByNetID\t(networkID)", "contents": "GetObjByNetID(${1:networkID})"},
 		{"trigger": "GetBuffSourceNID\t(unit, buffID)", "contents": "GetBuffSourceNID(${1:unit}, ${2:buffID})"},
 		{"trigger": "GetBuffSourceName\t(unit, buffID)", "contents": "GetBuffSourceName(${1:unit}, ${2:buffID})"},
-		{"trigger": "DrawCircle3D\t(x, y, z, radius, width, color, quality)", "contents": "DrawCircle3D(${1:x}, ${2:y}, ${3:z}, ${4:radius}, ${5:width}, ${6:color}, ${7:quality})"},
-		{"trigger": "DrawCircle2D\t(x, y, radius, width, color, quality)", "contents": "DrawCircle2D(${1:x}, ${2:y}, ${3:radius}, ${4:width}, ${5:color}, ${6:quality})"},
-		{"trigger": "DrawRectangleOutline\t(startPos, endPos, range, width, color)", "contents": "DrawRectangleOutline(${1:startPos}, ${2:endPos}, ${3:range}, ${4:width}, ${5:color})"},
+		{"trigger": "DrawCircle3D\t(x, y, z, radius, thickness, color, quality)", "contents": "DrawCircle3D(${1:x}, ${2:y}, ${3:z}, ${4:radius}, ${5:thickness}, ${6:color}, ${7:quality})"},
+		{"trigger": "DrawCircle2D\t(x, y, radius, thickness, color, quality)", "contents": "DrawCircle2D(${1:x}, ${2:y}, ${3:radius}, ${4:thickness}, ${5:color}, ${6:quality})"},
+		{"trigger": "DrawRectangleOutline\t(startPos, endPos, width, thickness, color)", "contents": "DrawRectangleOutline(${1:startPos}, ${2:endPos}, ${3:width}, ${4:thickness}, ${5:color})"},
 		{"trigger": "CountObjectsOnLineSegment\t(startPos, endPos, width, objTable, team)", "contents": "CountObjectsOnLineSegment(${1:startPos}, ${2:endPos}, ${3:width}, ${4:objTable}, ${5:team})"},
 		{"trigger": "CountObjectsNearPos\t(pos, radius, radius, objTable, team)", "contents": "CountObjectsNearPos(${1:pos}, ${2:radius}, ${2:radius}, ${3:objTable}, ${4:team})"},
 		{"trigger": "GetPercentHP\t(unit)", "contents": "GetPercentHP(${1:unit})"},
@@ -379,7 +379,7 @@
 		{"trigger": "Info\t:(\"id\", \"info\")", "contents": "Info(\"${1:id}\", \"${2:infoHere}\")"},
 		{"trigger": "Empty\t:(\"id\", value)", "contents": "Empty(\"${1:id}\", ${2:value})"},
 
-		{"trigger": "Load_Analytics\tLogge's Analytics", "contents": "if FileExist(COMMON_PATH..\"Analytics.lua\") then\n\trequire(\"Analytics\")\n\tAnalytics(\"${1:ScriptName}\", \"${2:Author}\", ${3:printLoaded--[[true/false]]})\nelse\n\tDownloadFileAsync(\"https://raw.githubusercontent.com/LoggeL/GoS/master/Analytics.lua\", COMMON_PATH..\"Analytics.lua\", function()\n\t\trequire(\"Analytics\")\n\t\tAnalytics(\"${1:ScriptName}\", \"${2:Author}\", ${3:printLoaded--[[true/false]]})\n\tend)\nend\n"},
+		{"trigger": "Load_Analytics\tLogge's Analytics", "contents": "if FileExist(COMMON_PATH..\"Analytics.lua\") then\n\trequire(\"Analytics\")\n\tAnalytics(\"${1:ScriptName}\", \"${2:Author}\", ${3:dontPrint--[[true/false]]})\nelse\n\tDownloadFileAsync(\"https://raw.githubusercontent.com/LoggeL/GoS/master/Analytics.lua\", COMMON_PATH..\"Analytics.lua\", function()\n\t\trequire(\"Analytics\")\n\t\tAnalytics(\"${1:ScriptName}\", \"${2:Author}\", ${3:dontPrint--[[true/false]]})\n\tend)\nend\n"},
 		{"trigger": "Load_ChallengerCommon\tDeftsu's ChallengerCommon", "contents": "if FileExist(COMMON_PATH..\"ChallengerCommon.lua\") then\n\trequire(\"ChallengerCommon\")\nelse\n\tPrintChat(string.format(\"<font color='#FFFFFF'>Please wait while downloading <b>ChallengerCommon.lua</b></font>\"))\n\tDownloadFileAsync(\"https://raw.githubusercontent.com/D3ftsu/GoS/master/Common/ChallengerCommon.lua\", COMMON_PATH..\"ChallengerCommon.lua\", function() PrintChat(string.format(\"<font color='#FFFFFF'>Downloaded <b>ChallengerCommon.lua</b>, please 2x F6!</font>\")) end) return\nend\n"},
 		{"trigger": "Load_MixLib\tRyzuki's MixLib", "contents": "if FileExist(COMMON_PATH..\"MixLib.lua\") then\n\trequire(\"MixLib\")\nelse\n\tPrintChat(string.format(\"<font color='#FFFFFF'>Please wait while downloading <b>MixLib.lua</b></font>\"))\n\tDownloadFileAsync(\"https://raw.githubusercontent.com/VTNEETS/GoS/master/MixLib.lua\", COMMON_PATH..\"MixLib.lua\", function() PrintChat(string.format(\"<font color='#FFFFFF'>Downloaded <b>MixLib.lua</b>, please 2x F6!</font>\")) end) return\nend\n"}
 	]
