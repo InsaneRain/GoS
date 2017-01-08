@@ -1,12 +1,10 @@
---[[ Mix Lib Version 0.11 ]]--
+--[[ Mix Lib Version 0.12 ]]--
 
-local MixLibVersion = 0.11
+local MixLibVersion = 0.12
 local Reback = {_G.AttackUnit, _G.MoveToXYZ, _G.CastSkillShot, _G.CastSkillShot2, _G.CastSpell, _G.CastTargetSpell}
-local QWER, dta = {"_Q", "_W", "_E", "_R"}, {circular = function(unit, data) return GetCircularAOEPrediction(unit, data) end, linear = function(unit, data) return GetLinearAOEPrediction(unit, data) end, cone = function(unit, data) return GetConicAOEPrediction(unit, data) end}
 local OW, gw, Check, RIP = mc_cfg_orb.orb:Value(), {"Combo", "Harass", "LaneClear", "LastHit"}, Set {5, 8, 21, 22}, function() end
-local attack_check, move_check, fix, Credits = false, false, {["Annie"] = {-7.5, -17}, ["Jhin"]  = {-7, -6}, ["Other"] = {1.5, 0}}, {"Feretorix", "Inspired", "Deftsu", "Platypus", "Icesythe7", "jouzuna", "MeoBeo"}
-local fixpos = function(unit) local fx = fix[unit.charName] and fix[unit.charName][1] or fix["Other"][1] local fy = fix[unit.charName] and fix[unit.charName][2] or fix["Other"][2] return { x = fx, y = fy } end
-local hpbar = function(unit) return { x = unit.hpBarPos.x + fixpos(unit).x, y = unit.hpBarPos.y + fixpos(unit).y } end
+local attack_check, move_check, fix = false, false, {["Annie"] = {-7.5, -17}, ["Jhin"]  = {-7, -6}, ["Other"] = {1.5, 0}}
+local hpbar = function(unit) return { x = unit.hpBarPos.x, y = unit.hpBarPos.y } end
 local hpP = function(unit) return (unit.health + unit.shieldAD)*103/(unit.maxHealth + unit.shieldAD) end
 local dmgP = function(dmg, unit) return dmg*103/(unit.maxHealth + unit.shieldAD) end
 local min, max, saveColor = math.min, math.max, {};
@@ -202,9 +200,9 @@ end
 
 local lastMove = 0
 function MixLib:Move(Pos)
-	if lastMove + 0.32 < os.clock() then
+	if lastMove + 0.32 < GetGameTimer() then
 		if GetDistanceSqr(Pos) > 10000 then MoveToXYZ(Pos) end
-		lastMove = os.clock()
+		lastMove = GetGameTimer()
 	end
 end
 
@@ -212,6 +210,8 @@ class "DrawDmgHPBar"
 function DrawDmgHPBar:__init(Menu, unit, color, Text)
 	self.cfg, self.data, self.value, self.c = Menu, {}, {}, #Text
 	self.unit = unit
+	self.fixX = fix[unit.charName] and fix[unit.charName][1] or fix["Other"][1]
+	self.fixY = fix[unit.charName] and fix[unit.charName][2] or fix["Other"][2]
 	self.cfg:Boolean("rt", "Enable on this target?", true)
 	self.cfg:Info("rc", "    ------------------------------")
 	for i = 1, self.c do
@@ -233,7 +233,7 @@ function DrawDmgHPBar:CheckValue()
 			end
 			self.value[i].show = false
 		end
-		if self.data[i].pos < 0 then 
+		if self.data[i].pos < 0 then
 			self.data[i].pos = 0
 			if i == 1 then
 				self.data[i].fill = hpP(self.unit)
@@ -260,8 +260,8 @@ end
 
 function DrawDmgHPBar:UpdatePos()
 	for i = 1, self.c do
-		self.value[i].x = hpbar(self.unit).x + self.data[i].pos
-		self.value[i].y = hpbar(self.unit).y
+		self.value[i].x = hpbar(self.unit).x + self.data[i].pos + self.fixX
+		self.value[i].y = hpbar(self.unit).y + self.fixY
 	end
 end
 
