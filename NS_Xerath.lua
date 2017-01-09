@@ -52,7 +52,7 @@ local GetLineFarmPosition2 = function (range, width, objects)
 			end
 		end
 	end
-		return Pos, Hit
+		return {Pos, Hit}
 end
 
 local GetFarmPosition2 = function(range, width, objects)
@@ -67,7 +67,7 @@ local GetFarmPosition2 = function(range, width, objects)
 			end
 		end
 	end
-		return Pos, Hit
+		return {Pos, Hit}
 end
 
 OnAnimation(function(u, a)
@@ -123,10 +123,10 @@ end
 
 local Cr = __MinionManager(QRange[3], Data[1].range)
 local function CanCast(t, target)
-	if (t == "W" and WObj and GetDistanceSqr(myHero, WObj.pos) >= GetDistanceSqr(myHero, target.pos)) then
+	if (t == "W" and WObj and GetDistanceSqr(myHero, WObj.pos) > GetDistanceSqr(myHero, target.pos)) then
 		return false
 	end
-	if (t == "E" and EObj and GetDistanceSqr(myHero, EObj.pos) >= GetDistanceSqr(myHero, target.pos)) then
+	if (t == "E" and EObj and GetDistanceSqr(myHero, EObj.pos) < GetDistanceSqr(myHero, target.pos)) then
 		return false
 	end
 	return true
@@ -258,8 +258,8 @@ end
 local function CheckRCasting()
 	if NS_Xe.ult.cast.mode:Value() < 3 then
 		local target = GetRTarget(myHero.pos, Data[3].range)
-		if NS_Xe.ult.cast.mode:Value() == 1 and NS_Xe.ult.cast.key:Value() then
-			CastR(target)
+		if NS_Xe.ult.cast.mode:Value() == 1 then
+			if NS_Xe.ult.cast.key:Value() then CastR(target) end
 		else
 			CastR(target)
 		end
@@ -419,18 +419,18 @@ end
 
 local function LaneClear()
 	if Castable[1] and NS_Xe.W.lc:Value() and ManaCheck(NS_Xe.W.MPlc:Value()) then
-		local WPos, WHit = GetFarmPosition2(Data[1].range, Data[1].width*0.5, Cr.tminion)
-		if WHit >= NS_Xe.W.h:Value() then CastSkillShot(_W, WPos) end
+		local Farm = GetFarmPosition2(Data[1].range, Data[1].width*0.5, Cr.tminion)
+		if Farm[2] >= NS_Xe.W.h:Value() then CastSkillShot(_W, Farm[1]) end
 	end
 	if Castable[0] and NS_Xe.Q.lc:Value() and (ManaCheck(NS_Xe.W.MPlc:Value()) or QActive) then
-		local QPos, QHit = GetLineFarmPosition2(QRange[3], Data[0].width, Cr.tminion)
+		local Farm = GetLineFarmPosition2(QRange[3], Data[0].width, Cr.tminion)
 		if not QActive then
-			if QHit >= NS_Xe.Q.h:Value() and GetGameTimer() - LastCastTime[1] > 0.1 then
+			if Farm[2] >= NS_Xe.Q.h:Value() and GetGameTimer() - LastCastTime[1] > 0.1 then
 				CastSkillShot(_Q, GetMousePos())
 			end
 		else
 			if GetDistanceSqr(QPos) <= QRange[1]*QRange[1] then
-				CastSkillShot2(_Q, QPos)
+				CastSkillShot2(_Q, Farm[1])
 			end
 		end
 	end
@@ -439,17 +439,17 @@ end
 local function JungleClear()
 	if not Cr.mmob then return end
 	local mob = Cr.mmob
-	if Castable[1] and NS_Xe.W.jc:Value() and ManaCheck(NS_Xe.W.MPjc:Value()) then
+	if Castable[1] and NS_Xe.W.jc:Value() and ManaCheck(NS_Xe.W.MPjc:Value()) and mob then
 		CastSkillShot(_W, mob.pos)
 	end
-	if Castable[2] and NS_Xe.E.jc:Value() and ManaCheck(NS_Xe.E.MPjc:Value()) and ValidTarget(mob, Data[2].range) then
+	if Castable[2] and NS_Xe.E.jc:Value() and ManaCheck(NS_Xe.E.MPjc:Value()) and mob then
 		CastSkillShot(_E, mob.pos)
 	end
 	if Castable[0] and NS_Xe.Q.jc:Value() and (ManaCheck(NS_Xe.Q.MPjc:Value()) or QActive) then
 		if not QActive then
 			CastSkillShot(_Q, GetMousePos())
-		elseif ValidTarget(mob, QRange[1]) then
-			CastSkillShot2(_Q, Vector(mob))
+		elseif mob and GetDistanceSqr(mob) <= QRange[1]*QRange[1] then
+			CastSkillShot2(_Q, mob.pos)
 		end
 	end
 end
@@ -529,9 +529,9 @@ local function Tick()
 
 	if mode == "LaneClear" then
 		Cr:Update()
-		if CCast or QAcive then
-			LaneClear()
+		if CCast then
 			JungleClear()
+			LaneClear()
 		end
 	end
 
