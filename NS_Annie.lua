@@ -40,21 +40,6 @@ local function DrawDmgOnHPBar(Menu, Color, Text)
 	end
 end
 
-local GetLineFarmPosition2 = function(range, width, objects)
-	local Pos, Hit = nil, 0
-	for i = 1, #objects, 1 do
-		local m = objects[i]
-		if ValidTarget(m, range) then
-			local count = CountObjectsOnLineSegment(Vector(myHero), Vector(m), width, objects, MINION_ENEMY)
-			if not Pos or CountObjectsOnLineSegment(Vector(myHero), Vector(Pos), width, objects, MINION_ENEMY) < count then
-				Pos = Vector(m)
-				Hit = count
-			end
-		end
-	end
-		return Pos, Hit
-end
-
 local GetFarmPosition2 = function(range, width, objects)
 	local Pos, Hit = nil, 0
 	for i = 1, #objects, 1 do
@@ -67,7 +52,7 @@ local GetFarmPosition2 = function(range, width, objects)
 			end
 		end
 	end
-		return Pos, Hit
+		return {Pos, Hit}
 end
 
 OnAnimation(function(u, a)
@@ -97,16 +82,6 @@ local Damage = {
 	[0] = function(unit) return CalcDmg(2, unit, 45 + 35*myHero:GetSpellData(_Q).level + 0.8*myHero.ap) end,
 	[1] = function(unit) return CalcDmg(2, unit, 25 + 45*myHero:GetSpellData(_W).level + 0.85*myHero.ap) end,
 	[3] = function(unit) return CalcDmg(2, unit, 25 + 130*myHero:GetSpellData(_R).level + 0.7*myHero.ap) end
-}
-local Target = {
-	[0] = ChallengerTargetSelector(Q.range, 2, false, nil, false, NS_Annie.Q),
-	[1] = ChallengerTargetSelector(W.range, 2, false, nil, false, NS_Annie.W),
-	[3] = ChallengerTargetSelector(R.range, 2, true, nil, false, NS_Annie.ult)
-}
-local Draw = {
-	[0] = DCircle(NS_Annie.dw, "Q", "Draw Q Range", Q.range, ARGB(150, 0, 245, 255)),
-	[1] = DCircle(NS_Annie.dw, "W", "Draw W Range", W.range, ARGB(150, 186, 85, 211)),
-	[3] = DCircle(NS_Annie.dw, "R", "Draw R Range", R.range, ARGB(150, 89, 0 ,179))
 }
 local Castable = {
 	[0] = false,
@@ -169,6 +144,16 @@ local Spell = {
 	[1] = AddSpell(W, NS_Annie.W, NS_Annie.cpred:Value()),
 	[3] = AddSpell(R, NS_Annie.ult, NS_Annie.cpred:Value())
 }
+local Target = {
+	[0] = ChallengerTargetSelector(Q.range, 2, false, nil, false, NS_Annie.Q),
+	[1] = ChallengerTargetSelector(W.range, 2, false, nil, false, NS_Annie.W),
+	[3] = ChallengerTargetSelector(R.range, 2, true, nil, false, NS_Annie.ult)
+}
+local Draw = {
+	[0] = DCircle(NS_Annie.dw, "Q", "Draw Q Range", Q.range, ARGB(150, 0, 245, 255)),
+	[1] = DCircle(NS_Annie.dw, "W", "Draw W Range", W.range, ARGB(150, 186, 85, 211)),
+	[3] = DCircle(NS_Annie.dw, "R", "Draw R Range", R.range, ARGB(150, 89, 0 ,179))
+}
 
 Target[0].Menu.TargetSelector.TargetingMode.callback = function(id) Target[0].Mode = id end
 Target[1].Menu.TargetSelector.TargetingMode.callback = function(id) Target[1].Mode = id end
@@ -194,10 +179,10 @@ end
 
 local function FlashR()
 	if EnemiesAround(myHero.pos, R.range) == 0 and EnemiesAround(myHero.pos, R.range + 420) > 0 and AlliesAround(myHero.pos, R.range) >= NS_Annie.ult.fult.x2:Value() then
-		local pos, hit = GetFarmPosition2(R.width, R.range + 420, Enemies)
-		if hit >= NS_Annie.ult.fult.x1:Value() then
-			CastSkillShot(D.Flash, pos)
-			if GetDistance(pos) <= R.range then CastSkillShot(_R, pos) end
+		local pred = GetFarmPosition2(R.width, R.range + 420, Enemies)
+		if pred[2] >= NS_Annie.ult.fult.x1:Value() then
+			CastSkillShot(D.Flash, pred[1])
+			if GetDistance(pred[1]) <= R.range then CastSkillShot(_R, pred[1]) end
 		end
 	end
 end
@@ -207,8 +192,8 @@ local function CheckR()
 		local target = Target[3]:GetTarget()
 		if ValidTarget(target, R.range) and GetHP2(target) < Damage[3](target) and (not Castable[0] or (Castable[0] and ValidTarget(target, Q.range) and GetHP2(target) > Damage[0](target))) and (not Castable[1] or (Castable[1] and ValidTarget(target, W.range) and GetHP2(target) > Damage[1](target))) then CastR(target) end
 	else
-		local pos, hit = GetFarmPosition2(R.width, R.range, Enemies)
-		if hit >= NS_Annie.ult.u2:Value() then CastSkillShot(_R, pos) end
+		local pred = GetFarmPosition2(R.width, R.range, Enemies)
+		if pred[2] >= NS_Annie.ult.u2:Value() then CastSkillShot(_R, pred[1]) end
 	end
 end
 
@@ -304,7 +289,10 @@ end
 
 local function Tick()
 	if myHero.dead then return end
-	for i = 0, 3 do Castable[i] = IsReady(i) end
+	Castable[0] = IsReady(0);
+	Castable[1] = IsReady(1);
+	Castable[2] = IsReady(2);
+	Castable[3] = IsReady(3);
 	local QTarget = Castable[0] and Target[0]:GetTarget()
 	local WTarget = Castable[1] and Target[1]:GetTarget()
 	mode = Mix:Mode()
