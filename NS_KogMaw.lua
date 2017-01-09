@@ -51,7 +51,7 @@ local GetLineFarmPosition2 = function(range, width, objects)
 			end
 		end
 	end
-		return Pos, Hit
+		return {Pos, Hit}
 end
 
 local GetFarmPosition2 = function(range, width, objects)
@@ -66,7 +66,7 @@ local GetFarmPosition2 = function(range, width, objects)
 			end
 		end
 	end
-		return Pos, Hit
+		return {Pos, Hit}
 end
 
 OnAnimation(function(u, a)
@@ -222,12 +222,12 @@ local function LaneClear()
 		if RCount > NS_Kog.misc.rc.R2:Value() then return end
 		if NS_Kog.R.ec:Value() and EnemiesAround(myHero.pos, 1200) > 0 then return end
 		if NS_Kog.misc.rc.R1:Value() and myHero.mana - 40*RCount < 40 then return end
-		local RPos, RHit = GetFarmPosition2(Data[3].range, Data[3].width, Cr.tminion)
-		if RHit >= NS_Kog.R.h:Value() then CastSkillShot(_R, RPos) end
+		local Farm = GetFarmPosition2(Data[3].range, Data[3].width, Cr.tminion)
+		if Farm[2] >= NS_Kog.R.h:Value() then CastSkillShot(_R, Farm[1]) end
     end
     if Castable[2] and NS_Kog.E.lc:Value() and ManaCheck(NS_Kog.E.MPlc:Value()) then
-    	local EPos, EHit = GetLineFarmPosition2(Data[2].range, Data[2].width, Cr.tminion)
-		if EHit >= NS_Kog.E.h:Value() then CastSkillShot(_E, EPos) end
+    	local Farm = GetLineFarmPosition2(Data[2].range, Data[2].width, Cr.tminion)
+		if Farm[2] >= NS_Kog.E.h:Value() then CastSkillShot(_E, Farm[1]) end
 	end
 end
 
@@ -263,7 +263,10 @@ local function DmgHPBar()
 end
 
 local function Updating()
-	for i = 0, 3 do Castable[i] = IsReady(i) end
+	Castable[0] = IsReady(0);
+	Castable[1] = IsReady(1);
+	Castable[2] = IsReady(2);
+	Castable[3] = IsReady(3);
 	WRange = 675 + 20*myHero:GetSpellData(_W).level
 	Data[3].range = 900 + 300*myHero:GetSpellData(3).level + myHero.boundingRadius
 	for i = 1, Enemies.Count, 1 do
