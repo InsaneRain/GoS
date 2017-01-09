@@ -1,4 +1,4 @@
---[[ NEET Series Version 0.265
+--[[ NEET Series Version 0.27
 	_____   ___________________________   ________           _____             
 	___  | / /__  ____/__  ____/__  __/   __  ___/______________(_)____________
 	__   |/ /__  __/  __  __/  __  /      _____ \_  _ \_  ___/_  /_  _ \_  ___/
@@ -6,7 +6,7 @@
 	/_/ |_/  /_____/  /_____/  /_/        /____/ \___//_/    /_/  \___//____/  
 
 ---------------------------------------]]
-local NEETSeries_Version = 0.265
+local NEETSeries_Version = 0.27
 local function NEETSeries_Print(text) PrintChat(string.format("<font color=\"#4169E1\"><b>[NEET Series]:</b></font><font color=\"#FFFFFF\"> %s</font>", tostring(text))) end
 
 if not FileExist(COMMON_PATH.."MixLib.lua") then
@@ -92,7 +92,8 @@ end
 
 function __MinionManager:Update()
 	self.tminion = {}
-	for _, minion in pairs(self.minion) do
+	for i = 1, #self.minion, 1 do
+		local minion = self.minion[i]
 		if GetDistanceSqr(minion) <= self.range1 and IsObjectAlive(minion) and IsTargetable(minion) and not IsImmune(minion, myHero) and GetTeam(minion) == MINION_ENEMY then
 			self.tminion[#self.tminion + 1] = minion
 		end
@@ -100,18 +101,19 @@ function __MinionManager:Update()
 
 	self.tmob = {}
 	local BiggestMob = nil
-	for _, mob in pairs(self.mob) do
+	for i = 1, #self.mob, 1 do
+		local mob = self.mob[i]
 		if GetDistanceSqr(mob) <= self.range2 and IsObjectAlive(mob) and IsTargetable(mob) and not IsImmune(mob, myHero) and GetTeam(mob) == 300 then
 			self.tmob[#self.tmob + 1] = mob
 			if not BiggestMob or GetMaxHP(BiggestMob) < GetMaxHP(mob) then BiggestMob = mob end
 		end
 	end
-	self.mmob = BiggestMob
+	self.mmob = nil
 end
 
 local pred = {"OpenPredict", "GPrediction", "GoSPrediction"}
-function LoadPredMenu(menu)
-	menu:DropDown("cpred", "Choose Prediction:", 1, pred, function(val) NEETSeries_Print("2x F6 to ally using "..pred[val]) end)
+function LoadPredMenu(menu, v)
+	menu:DropDown("cpred", "Choose Prediction:", v or 1, pred, function(val) NEETSeries_Print("2x F6 to ally using "..pred[val]) end)
 	menu:Info("currentPred", "Current Prediction: "..pred[menu.cpred:Value()])
 	if menu.cpred:Value() == 2 and FileExist(COMMON_PATH.."GPrediction.lua") then require("GPrediction") end
 end
@@ -127,8 +129,8 @@ local checkHC = {
 	{1, 1, 1, 1}
 }
 class "AddSpell"
-function AddSpell:__init(spellData, menu, v)
-	menu:DropDown("chc", "Choose Hit-chance", 3, {"Low", "Normal", "High", "Very High"}, function(v) self.hc = checkHC[self.method][v] end)
+function AddSpell:__init(spellData, menu, v, h)
+	menu:DropDown("chc", "Choose Hit-chance", h or 3, {"Low", "Normal", "High", "Very High"}, function(v) self.hc = checkHC[self.method][v] end)
 	if v == 1 then spellData.type = "linear" end
 	if v == 2 then spellData.type = "line" end
 	spellData.radius = spellData.width * 0.5
