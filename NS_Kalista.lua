@@ -55,7 +55,7 @@ OnLoad(function()
 		local enemy = Enemies.List[i]
 		eTbl[enemy.networkID] = GotBuff(enemy, "kalistaexpungemarker")
 		NS_Kalista:Menu(i, "Draw DmgHP Bar "..enemy.charName)
-		HPBar[i] = DrawDmgHPBar(NS_Kalista[i], enemy, {ARGB(140, 0, 0, 0)}, {"E"})
+		HPBar[i] = DrawDmgHPBar(NS_Kalista[i], enemy, {ARGB(170, 0, 0, 0)}, {"E"})
 	end
 end)
 
@@ -90,7 +90,7 @@ local function DmgHPBar(i, dmg)
 	HPBar[i]:UpdatePos()
 	HPBar[i]:Draw()
 	local data = HPBar[i]:GetPos(1)
-	FillRect(data.x, data.y, 1, 9, ARGB(180, 255, 255, 0))
+	FillRect(data.x, data.y, 1, 9, ARGB(220, 255, 255, 0))
 end
 
 local function EKillCheck(unit, index)
