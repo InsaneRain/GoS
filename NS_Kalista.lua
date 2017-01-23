@@ -107,7 +107,7 @@ end
 OnTick(function()
 	if myHero.dead then return end
 	Creeps:Update()
-	damage = eDmg[myHero:GetSpellData(_E).level] + (0.175 + 0.025*myHero:GetSpellData(_E).level)*myHero.totalDamage
+	if IsReady(_E) then damage = eDmg[myHero:GetSpellData(_E).level] + (0.175 + 0.025*myHero:GetSpellData(_E).level)*myHero.totalDamage end
 	if not NS_Kalista.Q.ks:Value() then return end
 	for i = 1, Enemies.Count, 1 do
 		if not IsReady(_Q) then return end
