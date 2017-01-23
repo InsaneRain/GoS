@@ -1,4 +1,4 @@
---[[ NEET Series Version 0.27
+--[[ NEET Series Version 0.28
 	_____   ___________________________   ________           _____             
 	___  | / /__  ____/__  ____/__  __/   __  ___/______________(_)____________
 	__   |/ /__  __/  __  __/  __  /      _____ \_  _ \_  ___/_  /_  _ \_  ___/
@@ -6,7 +6,7 @@
 	/_/ |_/  /_____/  /_____/  /_/        /____/ \___//_/    /_/  \___//____/  
 
 ---------------------------------------]]
-local NEETSeries_Version = 0.27
+local NEETSeries_Version = 0.28
 local function NEETSeries_Print(text) PrintChat(string.format("<font color=\"#4169E1\"><b>[NEET Series]:</b></font><font color=\"#FFFFFF\"> %s</font>", tostring(text))) end
 
 if not FileExist(COMMON_PATH.."MixLib.lua") then
@@ -19,7 +19,7 @@ if not FileExist(COMMON_PATH.."OpenPredict.lua") or not FileExist(COMMON_PATH.."
 if not ChallengerCommonLoaded then require("ChallengerCommon") end
 if not Analytics then require("Analytics") end
 
-local SupTbl = {"Xerath", "KogMaw", "Annie"}
+local SupTbl = {"Xerath", "KogMaw", "Annie", "Kalista"}
 local Supported = Set(SupTbl)
 
 local NS_Menu = MenuConfig("NEETSeries", "[NEET Series]: Menu")
@@ -58,8 +58,8 @@ function __MinionManager:__init(range1, range2)
 end
 
 function __MinionManager:CreateObj(obj)
-	if GetObjectType(obj) ~= "obj_AI_Minion" or GetObjectBaseName(obj):find("Plant") or GetTeam(obj) == MINION_ALLY then return end
-	if GetObjectBaseName(obj):find("Minion_") and GetTeam(obj) ~= 300 then
+	if GetObjectType(obj) ~= Obj_AI_Minion or GetObjectBaseName(obj):find("Plant") or GetTeam(obj) == MINION_ALLY then return end
+	if GetObjectName(obj):find("Minion") and GetTeam(obj) ~= 300 then
 		self.minion[#self.minion + 1] = obj
 		return
 	end
@@ -70,8 +70,8 @@ function __MinionManager:CreateObj(obj)
 end
 
 function __MinionManager:DeleteObj(obj)
-	if GetObjectType(obj) ~= "obj_AI_Minion" or GetObjectBaseName(obj):find("Plant") or GetTeam(obj) == MINION_ALLY then return end
-	if GetObjectBaseName(obj):find("Minion_") and GetTeam(obj) ~= 300 then
+	if GetObjectType(obj) ~= Obj_AI_Minion or GetObjectBaseName(obj):find("Plant") or GetTeam(obj) == MINION_ALLY then return end
+	if GetObjectName(obj):find("Minion") and GetTeam(obj) ~= 300 then
 		for i = 1, #self.minion do
 			if self.minion[i] == obj then
 				table.remove(self.minion, i)
@@ -95,6 +95,7 @@ function __MinionManager:Update()
 	for i = 1, #self.minion, 1 do
 		local minion = self.minion[i]
 		if GetDistanceSqr(minion) <= self.range1 and IsObjectAlive(minion) and IsTargetable(minion) and not IsImmune(minion, myHero) and GetTeam(minion) == MINION_ENEMY then
+			
 			self.tminion[#self.tminion + 1] = minion
 		end
 	end
@@ -134,7 +135,7 @@ function AddSpell:__init(spellData, menu, v, h)
 	if v == 1 then spellData.type = "linear" end
 	if v == 2 then spellData.type = "line" end
 	spellData.radius = spellData.width * 0.5
-	spellData.col = {"minion","champion"}
+	spellData.col = {"minion", "champion"}
 	self.method = v
 	self.data = spellData
 	self.hc = checkHC[self.method][menu.chc:Value()]
@@ -215,12 +216,12 @@ do
 	if not Supported[myHero.charName] then NEETSeries_Print("Not Supported For "..myHero.charName) return end
 	if not FileExist(COMMON_PATH.."NS_"..myHero.charName..".lua") then
 		NEETSeries_Print("Downloading NS_"..myHero.charName..".lua. Please wait...")
-		DelayAction(function() DownloadFileAsync("https://raw.githubusercontent.com/VTNEETS/GoS/master/NS_"..myHero.charName..".lua", COMMON_PATH.."NS_"..myHero.charName..".lua", function() NEETSeries_Print("Downloaded plugin NS_"..myHero.charName..".lua, please 2x F6!") return end) end, 1)
+		DelayAction(function() DownloadFileAsync("https://raw.githubusercontent.com/VTNEETS/GoS/master/NS_"..myHero.charName..".lua", COMMON_PATH.."NS_"..myHero.charName..".lua", function() NEETSeries_Print("Downloaded plugin NS_"..myHero.charName..".lua, please 2x F6!") return end) end, 0.3)
 		return
-	else
-		if NS_Menu.Plugin:Value() then require("NS_"..myHero.charName) end
+	elseif NS_Menu.Plugin:Value() then
+		require("NS_"..myHero.charName)
+		Analytics("NEETSeries", "Ryzuki", true)
 	end
-	Analytics("NEETSeries", "Ryzuki", true)
 end
 
 --[[ -------------> Change log <-------------
@@ -261,5 +262,8 @@ end
 
 		{ Version 0.25 + 0.26 }
 			- Improve Fps
+
+		{ Version 0.28 }
+			- Added Kalista
 
 -------------------------------------------]]
