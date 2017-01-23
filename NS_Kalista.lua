@@ -54,7 +54,7 @@ OnLoad(function()
 	for i = 1, Enemies.Count, 1 do
 		local enemy = Enemies.List[i]
 		local buff = GotBuff(enemy, "kalistaexpungemarker")
-		if buff > 0 then eTbl[enemy.networkID] = buff end
+		eTbl[enemy.networkID] = buff > 0 and buff or nil
 		NS_Kalista:Menu(i, "Draw DmgHP Bar "..enemy.charName)
 		HPBar[i] = DrawDmgHPBar(NS_Kalista[i], enemy, {ARGB(170, 0, 0, 0)}, {"E"})
 	end
@@ -75,7 +75,7 @@ end)
 OnGainVision(function(unit) 
 	if unit.team ~= myHero.team and (unit.type == Obj_AI_Hero or unit.type == Obj_AI_Minion) and not unit.dead then
 		local buff = GotBuff(unit, "kalistaexpungemarker")
-		if buff > 0 then eTbl[unit.networkID] = buff end
+		eTbl[unit.networkID] = buff > 0 and buff or nil
 	end
 end)
 
