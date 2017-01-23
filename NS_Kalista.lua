@@ -43,7 +43,7 @@ NS_Kalista:Menu("Q", "Q Settings")
 	NS_Kalista.Q:Boolean("cb", "Use Q in combo", true)
 	NS_Kalista.Q:Boolean("ks", "Use Q kill steal", true)
 	LoadPredMenu(NS_Kalista.Q)
-	QSpell = AddSpell(QData, NS_Kalista.Q, NS_Kalista.Q.cpred:Value(), 2)
+	local QSpell = AddSpell(QData, NS_Kalista.Q, NS_Kalista.Q.cpred:Value(), 2)
 NS_Kalista:Menu("dw", "Drawings")
 local Draw = {
 	[0] = DCircle(NS_Kalista.dw, "Q", "Draw Q Range", QData.range, ARGB(150, 0, 245, 255)),
