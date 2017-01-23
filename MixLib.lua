@@ -1,6 +1,6 @@
---[[ Mix Lib Version 0.125 ]]--
+--[[ Mix Lib Version 0.13 ]]--
 
-local MixLibVersion = 0.125
+local MixLibVersion = 0.13
 local Reback = {_G.AttackUnit, _G.MoveToXYZ, _G.CastSkillShot, _G.CastSkillShot2, _G.CastSpell, _G.CastTargetSpell}
 local OW, gw, Check, RIP = mc_cfg_orb.orb:Value(), {"Combo", "Harass", "LaneClear", "LastHit"}, Set {5, 8, 21, 22}, function() end
 local attack_check, move_check, fix = false, false, {["Annie"] = {-7.5, -17}, ["Jhin"]  = {-7, -6}, ["Other"] = {1.5, 0}}
@@ -53,8 +53,8 @@ do
 		fp(c)
 		local ps = function(n) Mix_Print("("..n.."/"..c..") "..FilesCheck[1][t[n]]..". Don't Press F6!") end
 		local download = function(n) DownloadFileAsync(FilesCheck[2][t[n]], COMMON_PATH..FilesCheck[1][t[n]], function() ps(n) check(n+1) end) end
-		check = function(n) if n > c then Mix_Print("All file need have been downloaded. Please x2F6!") return end DelayAction(function() download(n) end, 1) end
-		DelayAction(function() download(1) end, 1)
+		check = function(n) if n > c then Mix_Print("All file need have been downloaded. Please x2F6!") return end DelayAction(function() download(n) end, 0.5) end
+		DelayAction(function() download(1) end, 0.5)
 	end
 end
 
@@ -83,8 +83,8 @@ function MixLib:PrintCurrOW()
 end
 
 function MixLib:Mode()
-	if self.OW == "GoSWalk" and gw[GoSWalk.CurrentMode+1] then return gw[GoSWalk.CurrentMode+1] end
-	if self.OW ~= "Disabled" then return _G[self.OW]:Mode() end
+	if self.OW == "GoSWalk" then return gw[GoSWalk.CurrentMode+1]
+	elseif self.OW ~= "Disabled" then return _G[self.OW]:Mode() end
 		return ""
 end
 
@@ -128,7 +128,7 @@ end
 
 function MixLib:HealthPredict(unit, time, hpname) -- time[ms] | name["OW", "OP", "GoS"]
 	if hpname == "OP" then
-		return GetHealthPrediction(unit, time + GetLatency()*0.5)
+		return GetHealthPrediction(unit, time + GetLatency())
 	end
 	if hpname == "OW" then
 		if self.OW == "IOW" then
@@ -140,10 +140,10 @@ function MixLib:HealthPredict(unit, time, hpname) -- time[ms] | name["OW", "OP",
 		elseif self.OW == "DACR" then
 			return DACR:GetHealthPrediction(unit, time*0.001, 0)
 		elseif self.OW == "SLW" then
-			return SLW:PredictHP(unit, time*0.001 + GetLatency()*0.5)
+			return SLW:PredictHP(unit, time*0.001 + GetLatency()*0.001)
 		end
 	end
-	return unit.health - GetDamagePrediction(unit, time + GetLatency()*0.5)
+	return unit.health - GetDamagePrediction(unit, time + GetLatency())
 end
 
 -- Ignite: "summonerdot"
@@ -173,7 +173,7 @@ function MixLib:GetSlotByName(NAME, s, e) -- Name, Start, End
 		return nil
 end
 
-function MixLib:GetCurrentTarget()
+function MixLib:GetTarget()
 	if self.OW == "GoSWalk" then return GoSWalk.CurrentTarget end
 	if self.OW ~= "Disabled" then return _G[self.OW]:GetTarget() end
 		return nil
@@ -201,9 +201,9 @@ end
 local lastMove = 0
 function MixLib:Move(Pos)
 	Pos = Pos or GetMousePos()
-	if lastMove + 0.32 < GetGameTimer() then
+	if lastMove < GetGameTimer() then
 		if GetDistanceSqr(Pos) > 10000 then MoveToXYZ(Pos) end
-		lastMove = GetGameTimer()
+		lastMove = GetGameTimer() + 0.32
 	end
 end
 
@@ -286,7 +286,7 @@ function DCircle:__init(Menu, id, text, range, color, width)
 	self.cfg = Menu[id]
 	self.cfg:Boolean("r1",   "Enable Draw?", true)
 	self.cfg:Slider("r2",    "Circle Quality (%)", 35, 1, 100, 1)
-	self.cfg:ColorPick("r3", "Circle Color", {color["a"], color["r"], color["g"] ,color["b"]})
+	self.cfg:ColorPick("r3", "Circle Color", {color["a"], color["r"], color["g"], color["b"]})
 end
 
 function DCircle:Update(what, value)
@@ -295,8 +295,8 @@ end
 
 function DCircle:Draw(Pos, bonusQuality)
 	if self.cfg.r1:Value() and Pos then
-		local bQuality, menuQuality = bonusQuality or 0, self.cfg.r2:Value()*0.01
-		DrawCircle3D(Pos.x, Pos.y, Pos.z, self.range, self.width, self.cfg.r3:Value(), self.range*(20+bQuality)/100*menuQuality)
+		local bQuality, menuQuality = bonusQuality or 0, self.cfg.r2:Value()*0.0001
+		DrawCircle3D(Pos.x, Pos.y, Pos.z, self.range, self.width, self.cfg.r3:Value(), self.range*(20+bQuality)*menuQuality)
 	end
 end
 
