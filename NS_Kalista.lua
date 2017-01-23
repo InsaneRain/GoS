@@ -1,5 +1,4 @@
 local eDmg = {10, 14, 19, 25, 32}
-eDmg[0] = 0
 local eRange = myHero:GetSpellData(_E).range
 local Enemies = LoadEnemies()
 local Creeps = __MinionManager(eRange, eRange)
@@ -41,7 +40,8 @@ NS_Kalista:Menu("jc", "Jungle Clear")
 	end
 	NS_Kalista.jc:Boolean("eb", "Only enable if press farm key", false)
 NS_Kalista:Menu("Q", "Q Settings")
-	NS_Kalista.Q:Boolean("Q", "Use Q in combo", true)
+	NS_Kalista.Q:Boolean("cb", "Use Q in combo", true)
+	NS_Kalista.Q:Boolean("ks", "Use Q kill steal", true)
 	LoadPredMenu(NS_Kalista.Q)
 	QSpell = AddSpell(QData, NS_Kalista.Q, NS_Kalista.Q.cpred:Value(), 2)
 NS_Kalista:Menu("dw", "Drawings")
@@ -53,7 +53,8 @@ local Draw = {
 OnLoad(function()
 	for i = 1, Enemies.Count, 1 do
 		local enemy = Enemies.List[i]
-		eTbl[enemy.networkID] = GotBuff(enemy, "kalistaexpungemarker")
+		local buff = GotBuff(enemy, "kalistaexpungemarker")
+		if buff > 0 then eTbl[enemy.networkID] = buff end
 		NS_Kalista:Menu(i, "Draw DmgHP Bar "..enemy.charName)
 		HPBar[i] = DrawDmgHPBar(NS_Kalista[i], enemy, {ARGB(170, 0, 0, 0)}, {"E"})
 	end
@@ -67,18 +68,19 @@ end)
 
 OnRemoveBuff(function(unit, buff) 
 	if unit.team ~= myHero.team and buff.Name == "kalistaexpungemarker" then
-		eTbl[unit.networkID] = 0
+		eTbl[unit.networkID] = nil
 	end
 end)
 
 OnGainVision(function(unit) 
 	if unit.team ~= myHero.team and (unit.type == Obj_AI_Hero or unit.type == Obj_AI_Minion) and not unit.dead then
-		eTbl[unit.networkID] = GotBuff(unit, "kalistaexpungemarker")
+		local buff = GotBuff(unit, "kalistaexpungemarker")
+		if buff > 0 then eTbl[unit.networkID] = buff end
 	end
 end)
 
 OnProcessSpellComplete(function(unit, spell) 
-	if unit == myHero and IsReady(_Q) and spell.name:lower():find("attack") then
+	if unit == myHero and IsReady(_Q) and spell.name:lower():find("attack") and NS_Kalista.Q.cb:Value() then
 		local target = spell.target
 		if target.isHero and ValidTarget(target, QData.range) then QSpell:Cast(target) end
 	end
@@ -94,10 +96,9 @@ local function DmgHPBar(i, dmg)
 end
 
 local function EKillCheck(unit, index)
-	if not eTbl[unit.networkID] or eTbl[unit.networkID] == 0 then return end
-	local dmg = myHero:CalcDamage(unit, 10 + 10*myHero:GetSpellData(_E).level + 0.6*myHero.totalDamage + damage*(eTbl[unit.networkID] - 1))
-	local hp = unit.health + unit.shieldAD
-	local count = dmg/hp * 100
+	if not eTbl[unit.networkID] then return end
+	local dmg = CalcPhysicalDamage(myHero, unit, 10 + 10*myHero:GetSpellData(_E).level + 0.6*myHero.totalDamage + damage*(eTbl[unit.networkID] - 1))
+	local count = dmg/GetHP(unit) * 100
 	if count > 100 then count = 100 end
 	if index then DmgHPBar(index, dmg) end
 	return math.round(count)
@@ -107,6 +108,14 @@ OnTick(function()
 	if myHero.dead then return end
 	Creeps:Update()
 	damage = eDmg[myHero:GetSpellData(_E).level] + (0.175 + 0.025*myHero:GetSpellData(_E).level)*myHero.totalDamage
+	if not NS_Kalista.Q.ks:Value() then return end
+	for i = 1, Enemies.Count, 1 do
+		if not IsReady(_Q) then return end
+		local enemy = Enemies.List[i]
+		if ValidTarget(enemy, QData.range) and GetHP(enemy) < CalcPhysicalDamage(myHero, enemy, -50 + 60*myHero:GetSpellData(_Q).level + myHero.totalDamage) then
+			QSpell:Cast(enemy)
+		end
+	end
 end)
 
 OnDraw(function()
