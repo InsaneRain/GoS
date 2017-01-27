@@ -1,4 +1,4 @@
---[[ NEET Series Version 0.295
+--[[ NEET Series Version 0.3
 	_____   ___________________________   ________           _____             
 	___  | / /__  ____/__  ____/__  __/   __  ___/______________(_)____________
 	__   |/ /__  __/  __  __/  __  /      _____ \_  _ \_  ___/_  /_  _ \_  ___/
@@ -6,7 +6,7 @@
 	/_/ |_/  /_____/  /_____/  /_/        /____/ \___//_/    /_/  \___//____/  
 
 ---------------------------------------]]
-local NEETSeries_Version = 0.295
+local NEETSeries_Version = 0.3
 local function NEETSeries_Print(text) PrintChat(string.format("<font color=\"#4169E1\"><b>[NEET Series]:</b></font><font color=\"#FFFFFF\"> %s</font>", tostring(text))) end
 
 if not FileExist(COMMON_PATH.."MixLib.lua") then
@@ -95,7 +95,6 @@ function __MinionManager:Update()
 	for i = 1, #self.minion, 1 do
 		local minion = self.minion[i]
 		if GetDistanceSqr(minion) <= self.range1 and IsObjectAlive(minion) and IsTargetable(minion) and not IsImmune(minion, myHero) and GetTeam(minion) == MINION_ENEMY then
-			
 			self.tminion[#self.tminion + 1] = minion
 		end
 	end
@@ -132,8 +131,10 @@ local checkHC = {
 class "AddSpell"
 function AddSpell:__init(spellData, menu, v, h)
 	menu:DropDown("chc", "Choose Hit-chance", h or 3, {"Low", "Normal", "High", "Very High"}, function(v) self.hc = checkHC[self.method][v] end)
-	if v == 1 then spellData.type = "linear" end
-	if v == 2 then spellData.type = "line" end
+	if spellData.type:find("line") then
+		if v == 1 then spellData.type = "linear"
+		else spellData.type = "line" end
+	end
 	spellData.radius = spellData.width * 0.5
 	spellData.col = {"minion", "champion"}
 	self.method = v
@@ -265,5 +266,8 @@ end
 
 		{ Version 0.28 }
 			- Added Kalista
+
+		{ Version 0.3 }
+			- Fixed spelltype wrongs.
 
 -------------------------------------------]]
