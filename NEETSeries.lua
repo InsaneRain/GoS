@@ -1,4 +1,4 @@
---[[ NEET Series Version 0.3
+--[[ NEET Series Version 0.31
 	_____   ___________________________   ________           _____             
 	___  | / /__  ____/__  ____/__  __/   __  ___/______________(_)____________
 	__   |/ /__  __/  __  __/  __  /      _____ \_  _ \_  ___/_  /_  _ \_  ___/
@@ -6,7 +6,7 @@
 	/_/ |_/  /_____/  /_____/  /_/        /____/ \___//_/    /_/  \___//____/  
 
 ---------------------------------------]]
-local NEETSeries_Version = 0.3
+local NEETSeries_Version = 0.31
 local function NEETSeries_Print(text) PrintChat(string.format("<font color=\"#4169E1\"><b>[NEET Series]:</b></font><font color=\"#FFFFFF\"> %s</font>", tostring(text))) end
 
 if not FileExist(COMMON_PATH.."MixLib.lua") then
