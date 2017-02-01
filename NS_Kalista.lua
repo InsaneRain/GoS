@@ -7,8 +7,8 @@ local function IsSReady(spell) return CanUseSpell(myHero, spell) == 0 or CanUseS
 local QData = {delay = 0.25, speed = 2000, width = 80, range = myHero:GetSpellData(_Q).range + myHero.boundingRadius, type = "linear", colNum = 1, slot = 0}
 local NS_Kalista = MenuConfig("NS_Kalista", "[NEET Series] - Kalista")
 NS_Kalista:Menu("lc", "Lane Clear")
-	NS_Kalista.lc:Boolean("supm", "Super minion", true)
-	NS_Kalista.lc:Boolean("siem", "Siege minion", true)
+	NS_Kalista.lc:Boolean("sup", "Super minion", true)
+	NS_Kalista.lc:Boolean("sie", "Siege minion", true)
 	NS_Kalista.lc:Slider("at", "Auto E if killable x minions", 2, 1, 30, 1)
 	NS_Kalista.lc:Boolean("eb", "Only enable if press farm key", true)
 NS_Kalista:Menu("jc", "Jungle Clear")
@@ -55,8 +55,8 @@ OnLoad(function()
 		local enemy = Enemies.List[i]
 		local buff = GotBuff(enemy, "kalistaexpungemarker")
 		eTbl[enemy.networkID] = buff > 0 and buff or nil
-		NS_Kalista:Menu(i, "Draw DmgHP Bar "..enemy.charName)
-		HPBar[i] = DrawDmgHPBar(NS_Kalista[i], enemy, {ARGB(170, 0, 0, 0)}, {"E"})
+		NS_Kalista.dw:Menu(i, "Draw DmgHP Bar "..enemy.charName)
+		HPBar[i] = DrawDmgHPBar(NS_Kalista.dw[i], enemy, {ARGB(170, 0, 0, 0)}, {"E"})
 	end
 end)
 
